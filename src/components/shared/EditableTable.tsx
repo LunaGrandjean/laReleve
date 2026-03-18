@@ -63,7 +63,37 @@ export default function EditableTable<T extends { id: string }>({
                   const isEditing = editingCell?.rowId === row.id && editingCell?.key === String(col.key);
                   const colorClass = statusColors && statusColors[val];
 
+                  if (col.type === 'date') {
+                    return (
+                      <td key={String(col.key)} className="px-3 py-2">
+                        <input
+                          type="date"
+                          value={val}
+                          onChange={e => handleChange(row.id, col.key, e.target.value)}
+                          className="bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </td>
+                    );
+                  }
+
                   if (col.type === 'select' && col.options) {
+                    return (
+                      <td key={String(col.key)} className="px-3 py-2">
+                        <select
+                          value={val}
+                          onChange={e => handleChange(row.id, col.key, e.target.value)}
+                          className={cn(
+                            'text-xs font-medium px-2 py-1 rounded-md border-none focus:ring-1 focus:ring-primary cursor-pointer',
+                            colorClass || 'bg-secondary'
+                          )}
+                        >
+                          {col.options.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </td>
+                    );
+                  }
                     return (
                       <td key={String(col.key)} className="px-3 py-2">
                         <select

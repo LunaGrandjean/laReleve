@@ -116,12 +116,38 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
             />
           </div>
 
-          {/* Calendar placeholder */}
+          {/* Visites à venir */}
           <div className="bg-card border border-border rounded-lg p-5 shadow-card">
-            <h3 className="font-semibold mb-3">Calendrier</h3>
-            <div className="text-center py-6 text-muted-foreground border-2 border-dashed border-border rounded-md text-sm">
-              Mini-agenda à venir
-            </div>
+            <h3 className="font-semibold mb-3">Agenda des visites</h3>
+            {(() => {
+              const today = new Date().toISOString().split('T')[0];
+              const visites = data.members
+                .flatMap(m =>
+                  m.recherches
+                    .filter(r => r.visite && r.visite >= today)
+                    .map(r => ({ membre: m.name, bien: r.bien || r.adresse || 'Bien non précisé', date: r.visite, adresse: r.adresse }))
+                )
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .slice(0, 8);
+
+              if (visites.length === 0) {
+                return <p className="text-muted-foreground text-sm text-center py-4">Aucune visite à venir</p>;
+              }
+
+              return (
+                <ul className="space-y-2 max-h-64 overflow-y-auto">
+                  {visites.map((v, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm border-b border-border pb-2 last:border-0">
+                      <span className="mt-0.5 shrink-0 w-2 h-2 rounded-full bg-primary" />
+                      <div>
+                        <span className="font-medium">{new Date(v.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                        <span className="text-muted-foreground"> — {v.membre}: {v.bien}{v.adresse ? ` (${v.adresse})` : ''}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
           </div>
         </div>
       </div>

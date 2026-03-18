@@ -10,7 +10,7 @@ interface MemberDetailProps {
 
 const rechercheColumns: ColumnDef<Recherche>[] = [
   { key: 'date', label: 'Date', width: '100px' },
-  { key: 'visite', label: 'Visite', width: '80px' },
+  { key: 'visite', label: 'Visite', type: 'date', width: '150px' },
   { key: 'bien', label: 'Biens', width: '120px' },
   { key: 'adresse', label: 'Adresse', width: '180px' },
   { key: 'prix', label: 'Prix', width: '100px' },
