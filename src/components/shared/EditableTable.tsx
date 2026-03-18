@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 export interface ColumnDef<T> {
   key: keyof T;
   label: string;
-  type?: 'text' | 'select';
+  type?: 'text' | 'select' | 'date';
   options?: string[];
   width?: string;
 }
@@ -63,6 +63,19 @@ export default function EditableTable<T extends { id: string }>({
                   const isEditing = editingCell?.rowId === row.id && editingCell?.key === String(col.key);
                   const colorClass = statusColors && statusColors[val];
 
+                  if (col.type === 'date') {
+                    return (
+                      <td key={String(col.key)} className="px-3 py-2">
+                        <input
+                          type="date"
+                          value={val}
+                          onChange={e => handleChange(row.id, col.key, e.target.value)}
+                          className="bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </td>
+                    );
+                  }
+
                   if (col.type === 'select' && col.options) {
                     return (
                       <td key={String(col.key)} className="px-3 py-2">
@@ -81,6 +94,8 @@ export default function EditableTable<T extends { id: string }>({
                       </td>
                     );
                   }
+
+
 
                   return (
                     <td
