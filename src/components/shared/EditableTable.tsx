@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 export interface ColumnDef<T> {
   key: keyof T;
   label: string;
-  type?: 'text' | 'select';
+  type?: 'text' | 'select' | 'date';
   options?: string[];
   width?: string;
 }
