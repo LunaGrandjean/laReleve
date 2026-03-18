@@ -94,23 +94,8 @@ export default function EditableTable<T extends { id: string }>({
                       </td>
                     );
                   }
-                    return (
-                      <td key={String(col.key)} className="px-3 py-2">
-                        <select
-                          value={val}
-                          onChange={e => handleChange(row.id, col.key, e.target.value)}
-                          className={cn(
-                            'text-xs font-medium px-2 py-1 rounded-md border-none focus:ring-1 focus:ring-primary cursor-pointer',
-                            colorClass || 'bg-secondary'
-                          )}
-                        >
-                          {col.options.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      </td>
-                    );
-                  }
+
+
 
                   return (
                     <td
