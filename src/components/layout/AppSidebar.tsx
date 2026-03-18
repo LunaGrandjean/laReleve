@@ -46,7 +46,7 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed lg:static z-50 top-0 left-0 h-screen w-64 bg-noir flex flex-col transition-transform duration-200',
+          'fixed lg:sticky z-50 top-0 left-0 h-screen w-64 bg-noir flex flex-col shrink-0 transition-transform duration-200',
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
