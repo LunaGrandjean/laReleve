@@ -6,8 +6,9 @@ import Dashboard from '@/components/dashboard/Dashboard';
 import ContactsPage from '@/components/contacts/ContactsPage';
 import MembersPage from '@/components/members/MembersPage';
 import MemberDetail from '@/components/members/MemberDetail';
+import DocumentsPage from '@/components/documents/DocumentsPage';
 
-type Tab = 'home' | 'contacts' | 'members';
+type Tab = 'home' | 'contacts' | 'members' | 'documents';
 
 export default function Index() {
   const { data, setContacts, addMember, deleteMember, updateMember } = useAppData();
@@ -46,6 +47,8 @@ export default function Index() {
             onDeleteMember={deleteMember}
           />
         );
+      case 'documents':
+        return <DocumentsPage />;
       default:
         return null;
     }

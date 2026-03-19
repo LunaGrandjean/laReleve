@@ -1,8 +1,8 @@
-import { Home, Users, BookUser, Menu, X } from 'lucide-react';
+import { Home, Users, BookUser, FolderOpen, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
-type Tab = 'home' | 'contacts' | 'members';
+type Tab = 'home' | 'contacts' | 'members' | 'documents';
 
 interface SidebarProps {
   activeTab: Tab;
@@ -14,6 +14,7 @@ const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'home', label: 'Accueil', icon: Home },
   { id: 'contacts', label: 'Contacts', icon: BookUser },
   { id: 'members', label: 'Membres', icon: Users },
+  { id: 'documents', label: 'Offres / Docs', icon: FolderOpen },
 ];
 
 export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: SidebarProps) {
@@ -26,7 +27,6 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(true)}
         className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-noir text-primary-foreground"
@@ -35,7 +35,6 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
         <Menu size={20} />
       </button>
 
-      {/* Overlay */}
       {mobileOpen && (
         <div
           className="lg:hidden fixed inset-0 z-40 bg-foreground/40"
@@ -43,14 +42,12 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           'fixed lg:sticky z-50 top-0 left-0 h-screen w-64 bg-noir flex flex-col shrink-0 transition-transform duration-200',
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        {/* Logo */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-sidebar-border">
           <button onClick={onLogoClick} className="text-xl font-bold text-primary tracking-wide">
             LaReleve
@@ -60,7 +57,6 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
           </button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map(({ id, label, icon: Icon }) => (
             <button
