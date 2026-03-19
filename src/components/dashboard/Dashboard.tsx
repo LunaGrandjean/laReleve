@@ -117,37 +117,7 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
 
         {/* Right sidebar */}
         <div className="space-y-5">
-          <div className="bg-card border border-border rounded-lg shadow-card p-5">
-            <h3 className="font-semibold mb-3">Activité récente</h3>
-            {recentActivity.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Aucune activité</p>
-            ) : (
-              <ul className="space-y-2 max-h-64 overflow-y-auto">
-                {recentActivity.map((a, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm border-b border-border pb-2 last:border-0">
-                    <StatusDot status={a.status} />
-                    <div>
-                      <span className="font-medium">{a.member}</span>
-                      <span className="text-muted-foreground"> — {a.type}: {a.label}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Notes block */}
-          <div className="bg-noir rounded-lg p-5">
-            <h3 className="font-semibold text-primary-foreground mb-3">Notes rapides</h3>
-            <textarea
-              value={quickNotes}
-              onChange={e => setQuickNotes(e.target.value)}
-              className="w-full bg-noir-light border-none rounded-md p-3 text-sm text-primary-foreground h-28 focus:ring-1 focus:ring-primary focus:outline-none resize-none placeholder:text-muted-foreground"
-              placeholder="Écrire une note..."
-            />
-          </div>
-
-          {/* Visites à venir */}
+          {/* Visites à venir - EN PREMIER */}
           <div className="bg-card border border-border rounded-lg p-5 shadow-card">
             <h3 className="font-semibold mb-3">Agenda des visites</h3>
             {(() => {
@@ -179,6 +149,37 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
                 </ul>
               );
             })()}
+          </div>
+
+          {/* Notes block */}
+          <div className="bg-noir rounded-lg p-5">
+            <h3 className="font-semibold text-primary-foreground mb-3">Notes rapides</h3>
+            <textarea
+              value={quickNotes}
+              onChange={e => setQuickNotes(e.target.value)}
+              className="w-full bg-noir-light border-none rounded-md p-3 text-sm text-primary-foreground h-28 focus:ring-1 focus:ring-primary focus:outline-none resize-none placeholder:text-muted-foreground"
+              placeholder="Écrire une note..."
+            />
+          </div>
+
+          {/* Activité récente - EN DERNIER */}
+          <div className="bg-card border border-border rounded-lg shadow-card p-5">
+            <h3 className="font-semibold mb-3">Activité récente</h3>
+            {recentActivity.length === 0 ? (
+              <p className="text-muted-foreground text-sm">Aucune activité</p>
+            ) : (
+              <ul className="space-y-2 max-h-64 overflow-y-auto">
+                {recentActivity.map((a, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm border-b border-border pb-2 last:border-0">
+                    <StatusDot status={a.status} />
+                    <div>
+                      <span className="font-medium">{a.member}</span>
+                      <span className="text-muted-foreground"> — {a.type}: {a.label}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>
