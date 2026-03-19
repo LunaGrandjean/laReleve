@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { AppData } from '@/types';
 import { Users, Search, FileText, Hammer, CheckCircle, Clock, XCircle } from 'lucide-react';
 import StatCard from './StatCard';
@@ -7,7 +8,17 @@ interface DashboardProps {
   onSelectMember: (id: string) => void;
 }
 
+const QUICK_NOTES_KEY = 'lareleve_quick_notes';
+
 export default function Dashboard({ data, onSelectMember }: DashboardProps) {
+  const [quickNotes, setQuickNotes] = useState(() => {
+    try { return localStorage.getItem(QUICK_NOTES_KEY) || ''; } catch { return ''; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(QUICK_NOTES_KEY, quickNotes);
+  }, [quickNotes]);
+
   const stats = {
     totalMembers: data.members.length,
     totalRecherches: data.members.reduce((a, m) => a + m.recherches.length, 0),
@@ -20,7 +31,6 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
     travauxEnCours: data.members.reduce((a, m) => a + m.travaux.filter(t => t.statut === 'En cours').length, 0),
   };
 
-  // Recent activity
   const recentActivity = data.members
     .flatMap(m => [
       ...m.offres.map(o => ({ type: 'Offre' as const, label: `${o.type} - ${o.adresse}`, status: o.statut, member: m.name, date: o.date })),
@@ -33,17 +43,37 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
     <div className="space-y-8 animate-fade-in">
       <h1 className="text-2xl font-bold text-foreground">Tableau de bord</h1>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <StatCard title="Membres" value={stats.totalMembers} icon={<Users size={20} />} variant="noir" />
-        <StatCard title="Recherches" value={stats.totalRecherches} icon={<Search size={20} />} variant="primary" />
-        <StatCard title="Offres totales" value={stats.offresTotal} icon={<FileText size={20} />} variant="primary" />
-        <StatCard title="Offres acceptées" value={stats.offresAcceptees} icon={<CheckCircle size={20} />} variant="success" />
-        <StatCard title="Offres en attente" value={stats.offresAttente} icon={<Clock size={20} />} variant="accent" />
-        <StatCard title="Offres refusées" value={stats.offresRefusees} icon={<XCircle size={20} />} variant="noir" />
-        <StatCard title="Travaux total" value={stats.travauxTotal} icon={<Hammer size={20} />} variant="primary" />
-        <StatCard title="Travaux en cours" value={stats.travauxEnCours} icon={<Clock size={20} />} variant="accent" />
-        <StatCard title="Travaux réalisés" value={stats.travauxRealises} icon={<CheckCircle size={20} />} variant="success" />
+      {/* Stats organized by category */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Membres & Recherches */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Membres & Recherches</h3>
+          <div className="space-y-3">
+            <StatCard title="Membres" value={stats.totalMembers} icon={<Users size={20} />} variant="noir" />
+            <StatCard title="Recherches" value={stats.totalRecherches} icon={<Search size={20} />} variant="primary" />
+          </div>
+        </div>
+
+        {/* Offres */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Offres</h3>
+          <div className="space-y-3">
+            <StatCard title="Offres totales" value={stats.offresTotal} icon={<FileText size={20} />} variant="primary" />
+            <StatCard title="Acceptées" value={stats.offresAcceptees} icon={<CheckCircle size={20} />} variant="success" />
+            <StatCard title="En attente" value={stats.offresAttente} icon={<Clock size={20} />} variant="accent" />
+            <StatCard title="Refusées" value={stats.offresRefusees} icon={<XCircle size={20} />} variant="noir" />
+          </div>
+        </div>
+
+        {/* Travaux */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Travaux</h3>
+          <div className="space-y-3">
+            <StatCard title="Travaux total" value={stats.travauxTotal} icon={<Hammer size={20} />} variant="primary" />
+            <StatCard title="En cours" value={stats.travauxEnCours} icon={<Clock size={20} />} variant="accent" />
+            <StatCard title="Réalisés" value={stats.travauxRealises} icon={<CheckCircle size={20} />} variant="success" />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -87,7 +117,6 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
 
         {/* Right sidebar */}
         <div className="space-y-5">
-          {/* Recent activity */}
           <div className="bg-card border border-border rounded-lg shadow-card p-5">
             <h3 className="font-semibold mb-3">Activité récente</h3>
             {recentActivity.length === 0 ? (
@@ -111,6 +140,8 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
           <div className="bg-noir rounded-lg p-5">
             <h3 className="font-semibold text-primary-foreground mb-3">Notes rapides</h3>
             <textarea
+              value={quickNotes}
+              onChange={e => setQuickNotes(e.target.value)}
               className="w-full bg-noir-light border-none rounded-md p-3 text-sm text-primary-foreground h-28 focus:ring-1 focus:ring-primary focus:outline-none resize-none placeholder:text-muted-foreground"
               placeholder="Écrire une note..."
             />

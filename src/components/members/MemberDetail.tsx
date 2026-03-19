@@ -32,7 +32,7 @@ const offreColumns: ColumnDef<Offre>[] = [
   { key: 'date', label: 'Date', width: '100px' },
   { key: 'commentaire', label: 'Commentaire', width: '160px' },
   { key: 'agence', label: 'Agence', width: '120px' },
-  { key: 'photos', label: 'Photos', width: '100px' },
+  { key: 'photos', label: 'Photos', type: 'photos', width: '180px' },
 ];
 
 const travauxColumns: ColumnDef<Travaux>[] = [

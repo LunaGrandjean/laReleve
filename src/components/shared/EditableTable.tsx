@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Trash2, ImagePlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ColumnDef<T> {
   key: keyof T;
   label: string;
-  type?: 'text' | 'select' | 'date';
+  type?: 'text' | 'select' | 'date' | 'photos';
   options?: string[];
   width?: string;
 }
@@ -33,6 +33,41 @@ export default function EditableTable<T extends { id: string }>({
 
   const addRow = () => onUpdate([...rows, createEmpty()]);
   const deleteRow = (id: string) => onUpdate(rows.filter(r => r.id !== id));
+
+  const handlePhotos = (rowId: string, key: keyof T, files: FileList) => {
+    const row = rows.find(r => r.id === rowId);
+    if (!row) return;
+
+    const existing: string[] = (() => {
+      try {
+        const val = row[key];
+        if (typeof val === 'string' && val.startsWith('[')) return JSON.parse(val);
+      } catch {}
+      return [];
+    })();
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const newPhotos = [...existing, reader.result as string];
+        onUpdate(rows.map(r => (r.id === rowId ? { ...r, [key]: JSON.stringify(newPhotos) } : r)));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removePhoto = (rowId: string, key: keyof T, index: number) => {
+    const row = rows.find(r => r.id === rowId);
+    if (!row) return;
+    try {
+      const val = row[key];
+      if (typeof val === 'string') {
+        const photos: string[] = JSON.parse(val);
+        photos.splice(index, 1);
+        onUpdate(rows.map(r => (r.id === rowId ? { ...r, [key]: JSON.stringify(photos) } : r)));
+      }
+    } catch {}
+  };
 
   return (
     <div className="space-y-2">
@@ -62,6 +97,10 @@ export default function EditableTable<T extends { id: string }>({
                   const val = String(row[col.key] ?? '');
                   const isEditing = editingCell?.rowId === row.id && editingCell?.key === String(col.key);
                   const colorClass = statusColors && statusColors[val];
+
+                  if (col.type === 'photos') {
+                    return <PhotoCell key={String(col.key)} rowId={row.id} colKey={col.key} val={val} onAdd={handlePhotos} onRemove={removePhoto} />;
+                  }
 
                   if (col.type === 'date') {
                     return (
@@ -94,8 +133,6 @@ export default function EditableTable<T extends { id: string }>({
                       </td>
                     );
                   }
-
-
 
                   return (
                     <td
@@ -136,5 +173,50 @@ export default function EditableTable<T extends { id: string }>({
         <Plus size={16} /> Ajouter une ligne
       </button>
     </div>
+  );
+}
+
+function PhotoCell<T>({ rowId, colKey, val, onAdd, onRemove }: {
+  rowId: string;
+  colKey: keyof T;
+  val: string;
+  onAdd: (rowId: string, key: keyof T, files: FileList) => void;
+  onRemove: (rowId: string, key: keyof T, index: number) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  let photos: string[] = [];
+  try { if (val.startsWith('[')) photos = JSON.parse(val); } catch {}
+
+  return (
+    <td className="px-3 py-2">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {photos.map((src, i) => (
+          <div key={i} className="relative group w-10 h-10 rounded overflow-hidden border border-border">
+            <img src={src} alt="" className="w-full h-full object-cover" />
+            <button
+              onClick={() => onRemove(rowId, colKey, i)}
+              className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-default"
+            >
+              <X size={12} className="text-background" />
+            </button>
+          </div>
+        ))}
+        <button
+          onClick={() => inputRef.current?.click()}
+          className="w-10 h-10 rounded border border-dashed border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-default"
+          title="Ajouter une photo"
+        >
+          <ImagePlus size={16} />
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={e => e.target.files && onAdd(rowId, colKey, e.target.files)}
+        />
+      </div>
+    </td>
   );
 }
