@@ -76,7 +76,7 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
         </nav>
 
         <div className="px-6 py-4 border-t border-sidebar-border">
-          <p className="text-xs text-muted-foreground">© 2026 LaReleve</p>
+          <p className="text-xs text-muted-foreground">© LaReleve - L'incubateur de MDB</p>
         </div>
       </aside>
     </>
