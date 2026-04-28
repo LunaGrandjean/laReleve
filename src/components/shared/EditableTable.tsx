@@ -1,11 +1,11 @@
-import { useState, useRef } from 'react';
-import { Plus, Trash2, ImagePlus, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Plus, Trash2, ImagePlus, X, Bold, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ColumnDef<T> {
   key: keyof T;
   label: string;
-  type?: 'text' | 'select' | 'date' | 'photos';
+  type?: 'text' | 'textarea' | 'richtext' | 'select' | 'date' | 'photos';
   options?: string[];
   width?: string;
 }
@@ -71,16 +71,20 @@ export default function EditableTable<T extends { id: string }>({
 
   return (
     <div className="space-y-2">
-      <div className="overflow-x-auto border border-border rounded-lg shadow-card">
-        <table className="w-full text-sm text-left">
+      <div className="w-full border border-border rounded-lg shadow-card overflow-hidden">
+        <table className="w-full text-sm text-left table-fixed">
           <thead className="bg-secondary border-b border-border">
             <tr>
               {columns.map(col => (
-                <th key={String(col.key)} className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap" style={col.width ? { minWidth: col.width } : undefined}>
+                <th
+                  key={String(col.key)}
+                  className="px-2 py-2.5 text-xs font-semibold text-muted-foreground uppercase break-words"
+                  style={col.width ? { width: col.width } : undefined}
+                >
                   {col.label}
                 </th>
               ))}
-              <th className="px-3 py-2.5 w-10"></th>
+              <th className="px-2 py-2.5 w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -92,7 +96,7 @@ export default function EditableTable<T extends { id: string }>({
               </tr>
             )}
             {rows.map(row => (
-              <tr key={row.id} className="hover:bg-secondary/30 transition-default">
+              <tr key={row.id} className="hover:bg-secondary/30 transition-default align-top">
                 {columns.map(col => {
                   const val = String(row[col.key] ?? '');
                   const isEditing = editingCell?.rowId === row.id && editingCell?.key === String(col.key);
@@ -104,12 +108,12 @@ export default function EditableTable<T extends { id: string }>({
 
                   if (col.type === 'date') {
                     return (
-                      <td key={String(col.key)} className="px-3 py-2">
+                      <td key={String(col.key)} className="px-2 py-2">
                         <input
                           type="date"
                           value={val}
                           onChange={e => handleChange(row.id, col.key, e.target.value)}
-                          className="bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-full bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </td>
                     );
@@ -117,12 +121,12 @@ export default function EditableTable<T extends { id: string }>({
 
                   if (col.type === 'select' && col.options) {
                     return (
-                      <td key={String(col.key)} className="px-3 py-2">
+                      <td key={String(col.key)} className="px-2 py-2">
                         <select
                           value={val}
                           onChange={e => handleChange(row.id, col.key, e.target.value)}
                           className={cn(
-                            'text-xs font-medium px-2 py-1 rounded-md border-none focus:ring-1 focus:ring-primary cursor-pointer',
+                            'w-full text-xs font-medium px-2 py-1 rounded-md border-none focus:ring-1 focus:ring-primary cursor-pointer',
                             colorClass || 'bg-secondary'
                           )}
                         >
@@ -134,10 +138,32 @@ export default function EditableTable<T extends { id: string }>({
                     );
                   }
 
+                  if (col.type === 'textarea') {
+                    return (
+                      <td key={String(col.key)} className="px-2 py-2">
+                        <AutoTextarea
+                          value={val}
+                          onChange={v => handleChange(row.id, col.key, v)}
+                        />
+                      </td>
+                    );
+                  }
+
+                  if (col.type === 'richtext') {
+                    return (
+                      <td key={String(col.key)} className="px-2 py-2">
+                        <RichTextCell
+                          value={val}
+                          onChange={v => handleChange(row.id, col.key, v)}
+                        />
+                      </td>
+                    );
+                  }
+
                   return (
                     <td
                       key={String(col.key)}
-                      className="px-3 py-2 cursor-text"
+                      className="px-2 py-2 cursor-text"
                       onClick={() => setEditingCell({ rowId: row.id, key: String(col.key) })}
                     >
                       {isEditing ? (
@@ -151,12 +177,12 @@ export default function EditableTable<T extends { id: string }>({
                           className="w-full bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       ) : (
-                        <span className="block truncate max-w-[200px]">{val || '—'}</span>
+                        <span className="block whitespace-pre-wrap break-words">{val || '—'}</span>
                       )}
                     </td>
                   );
                 })}
-                <td className="px-3 py-2">
+                <td className="px-2 py-2">
                   <button onClick={() => deleteRow(row.id)} className="text-destructive hover:text-destructive/80 transition-default" title="Supprimer">
                     <Trash2 size={15} />
                   </button>
@@ -218,5 +244,94 @@ function PhotoCell<T>({ rowId, colKey, val, onAdd, onRemove }: {
         />
       </div>
     </td>
+  );
+}
+
+function AutoTextarea({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  const resize = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useEffect(() => { resize(); }, [value]);
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      onInput={resize}
+      rows={1}
+      className="w-full bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none overflow-hidden whitespace-pre-wrap break-words"
+    />
+  );
+}
+
+const RT_COLORS = ['#000000', '#dc2626', '#ea580c', '#16a34a', '#2563eb', '#9333ea'];
+
+function RichTextCell({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [showColors, setShowColors] = useState(false);
+
+  // Sync external value into editor only when it differs (avoid caret jump)
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== value) {
+      ref.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const exec = (cmd: string, arg?: string) => {
+    ref.current?.focus();
+    document.execCommand(cmd, false, arg);
+    if (ref.current) onChange(ref.current.innerHTML);
+  };
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onMouseDown={e => { e.preventDefault(); exec('bold'); }}
+          className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-default"
+          title="Gras"
+        >
+          <Bold size={13} />
+        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onMouseDown={e => { e.preventDefault(); setShowColors(s => !s); }}
+            className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-default"
+            title="Couleur"
+          >
+            <Palette size={13} />
+          </button>
+          {showColors && (
+            <div className="absolute z-10 top-full left-0 mt-1 bg-popover border border-border rounded shadow-md p-1 flex gap-1">
+              {RT_COLORS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onMouseDown={e => { e.preventDefault(); exec('foreColor', c); setShowColors(false); }}
+                  className="w-4 h-4 rounded-full border border-border"
+                  style={{ background: c }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={e => onChange((e.target as HTMLDivElement).innerHTML)}
+        className="w-full min-h-[32px] bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary whitespace-pre-wrap break-words"
+      />
+    </div>
   );
 }

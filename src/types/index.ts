@@ -1,5 +1,6 @@
 export type StatusOffre = 'Acceptée' | 'En attente' | 'Refusée';
 export type StatusTravaux = 'Réalisé' | 'En cours';
+export type StatusRecherche = 'À visiter' | 'Visité' | 'Offre faite' | 'Abandonné';
 
 export interface Contact {
   id: string;
@@ -23,6 +24,8 @@ export interface Recherche {
   agence: string;
   lien: string;
   infos: string;
+  travaux: string;
+  statut: StatusRecherche | '';
 }
 
 export interface Offre {

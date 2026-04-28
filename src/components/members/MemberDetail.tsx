@@ -9,17 +9,19 @@ interface MemberDetailProps {
 }
 
 const rechercheColumns: ColumnDef<Recherche>[] = [
-  { key: 'date', label: 'Date', width: '100px' },
-  { key: 'visite', label: 'Visite', type: 'date', width: '150px' },
-  { key: 'bien', label: 'Biens', width: '120px' },
-  { key: 'adresse', label: 'Adresse', width: '180px' },
-  { key: 'prix', label: 'Prix', width: '100px' },
-  { key: 'prixM2', label: 'Prix m²', width: '90px' },
-  { key: 'marge', label: 'Marge', width: '80px' },
-  { key: 'nego', label: 'Négo', width: '80px' },
-  { key: 'agence', label: 'Agence', width: '120px' },
-  { key: 'lien', label: 'Lien', width: '120px' },
-  { key: 'infos', label: 'Infos', width: '150px' },
+  { key: 'date', label: 'Date', width: '7%' },
+  { key: 'visite', label: 'Visite', type: 'date', width: '9%' },
+  { key: 'statut', label: 'Statut', type: 'richtext', width: '9%' },
+  { key: 'bien', label: 'Biens', width: '6%' },
+  { key: 'adresse', label: 'Adresse', width: '10%' },
+  { key: 'prix', label: 'Prix', width: '5%' },
+  { key: 'prixM2', label: 'Prix m²', width: '5%' },
+  { key: 'marge', label: 'Marge', width: '5%' },
+  { key: 'nego', label: 'Négo', width: '5%' },
+  { key: 'agence', label: 'Agence', width: '7%' },
+  { key: 'lien', label: 'Lien', width: '7%' },
+  { key: 'travaux', label: 'Travaux', type: 'richtext', width: '10%' },
+  { key: 'infos', label: 'Infos', type: 'richtext', width: '13%' },
 ];
 
 const offreColumns: ColumnDef<Offre>[] = [
@@ -83,7 +85,7 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
           columns={rechercheColumns}
           rows={member.recherches}
           onUpdate={r => update({ recherches: r })}
-          createEmpty={() => ({ id: Date.now().toString(), date: '', visite: '', bien: '', adresse: '', prix: '', prixM2: '', marge: '', nego: '', agence: '', lien: '', infos: '' })}
+          createEmpty={() => ({ id: Date.now().toString(), date: '', visite: '', statut: '' as const, bien: '', adresse: '', prix: '', prixM2: '', marge: '', nego: '', agence: '', lien: '', travaux: '', infos: '' })}
         />
       </section>
 
