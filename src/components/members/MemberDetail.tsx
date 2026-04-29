@@ -34,6 +34,7 @@ const offreColumns: ColumnDef<Offre>[] = [
   { key: 'date', label: 'Date', width: '100px' },
   { key: 'commentaire', label: 'Commentaire', width: '160px' },
   { key: 'agence', label: 'Agence', width: '120px' },
+  { key: 'lien', label: 'Lien', singleLine: true, width: '140px' },
   { key: 'photos', label: 'Photos', type: 'photos', width: '180px' },
 ];
 
@@ -96,7 +97,7 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
           columns={offreColumns}
           rows={member.offres}
           onUpdate={o => update({ offres: o })}
-          createEmpty={() => ({ id: Date.now().toString(), type: '', adresse: '', statut: 'En attente' as const, prixAffiche: '', prixPropose: '', prixAchete: '', date: '', commentaire: '', agence: '', photos: '' })}
+          createEmpty={() => ({ id: Date.now().toString(), type: '', adresse: '', statut: 'En attente' as const, prixAffiche: '', prixPropose: '', prixAchete: '', date: '', commentaire: '', agence: '', lien: '', photos: '' })}
           statusColors={offreStatusColors}
         />
       </section>
