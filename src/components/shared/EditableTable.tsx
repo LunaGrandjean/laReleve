@@ -179,7 +179,7 @@ export default function EditableTable<T extends { id: string }>({
                           className="w-full bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       ) : (
-                        <span className="block whitespace-pre-wrap break-words">{val || '—'}</span>
+                        <span className="block whitespace-nowrap overflow-x-auto" title={val}>{val || '—'}</span>
                       )}
                     </td>
                   );
