@@ -19,7 +19,7 @@ const rechercheColumns: ColumnDef<Recherche>[] = [
   { key: 'marge', label: 'Marge', width: '5%' },
   { key: 'nego', label: 'Négo', width: '5%' },
   { key: 'agence', label: 'Agence', width: '7%' },
-  { key: 'lien', label: 'Lien', width: '7%' },
+  { key: 'lien', label: 'Lien', singleLine: true, width: '7%' },
   { key: 'travaux', label: 'Travaux', type: 'richtext', width: '10%' },
   { key: 'infos', label: 'Infos', type: 'richtext', multiline: true, width: '13%' },
 ];

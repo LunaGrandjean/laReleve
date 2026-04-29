@@ -9,6 +9,7 @@ export interface ColumnDef<T> {
   options?: string[];
   width?: string;
   multiline?: boolean;
+  singleLine?: boolean;
 }
 
 interface EditableTableProps<T extends { id: string }> {
@@ -179,7 +180,15 @@ export default function EditableTable<T extends { id: string }>({
                           className="w-full bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       ) : (
-                        <span className="block whitespace-nowrap overflow-x-auto" title={val}>{val || '—'}</span>
+                        <span
+                          className={cn(
+                            'block',
+                            col.singleLine ? 'whitespace-nowrap overflow-x-auto' : 'whitespace-pre-wrap break-words'
+                          )}
+                          title={val}
+                        >
+                          {val || '—'}
+                        </span>
                       )}
                     </td>
                   );
