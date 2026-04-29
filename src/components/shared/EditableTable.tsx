@@ -8,6 +8,7 @@ export interface ColumnDef<T> {
   type?: 'text' | 'textarea' | 'richtext' | 'select' | 'date' | 'photos';
   options?: string[];
   width?: string;
+  multiline?: boolean;
 }
 
 interface EditableTableProps<T extends { id: string }> {
@@ -155,6 +156,7 @@ export default function EditableTable<T extends { id: string }>({
                         <RichTextCell
                           value={val}
                           onChange={v => handleChange(row.id, col.key, v)}
+                          multiline={col.multiline}
                         />
                       </td>
                     );
@@ -273,7 +275,7 @@ function AutoTextarea({ value, onChange }: { value: string; onChange: (v: string
 
 const RT_COLORS = ['#000000', '#dc2626', '#ea580c', '#16a34a', '#2563eb', '#9333ea'];
 
-function RichTextCell({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function RichTextCell({ value, onChange, multiline }: { value: string; onChange: (v: string) => void; multiline?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [showColors, setShowColors] = useState(false);
 
@@ -330,7 +332,10 @@ function RichTextCell({ value, onChange }: { value: string; onChange: (v: string
         contentEditable
         suppressContentEditableWarning
         onInput={e => onChange((e.target as HTMLDivElement).innerHTML)}
-        className="w-full min-h-[32px] bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary whitespace-pre-wrap break-words"
+        className={cn(
+          'w-full min-h-[32px] bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary break-words',
+          multiline ? 'whitespace-pre-wrap' : 'whitespace-nowrap overflow-x-auto'
+        )}
       />
     </div>
   );
