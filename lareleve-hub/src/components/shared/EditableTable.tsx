@@ -5,8 +5,10 @@ import { cn } from '@/lib/utils';
 export interface ColumnDef<T> {
   key: keyof T;
   label: string;
-  type?: 'text' | 'select' | 'date' | 'photos';
+  type?: 'text' | 'select' | 'date' | 'photos' | 'link';
   options?: string[];
+  customOptionLabel?: string;
+  customOptionPlaceholder?: string;
   width?: string;
 }
 
@@ -96,7 +98,10 @@ export default function EditableTable<T extends { id: string }>({
                 {columns.map(col => {
                   const val = String(row[col.key] ?? '');
                   const isEditing = editingCell?.rowId === row.id && editingCell?.key === String(col.key);
-                  const colorClass = statusColors && statusColors[val];
+                  const isCustomSelectValue = col.type === 'select' && col.options && col.customOptionLabel
+                    ? Boolean(val) && !col.options.includes(val)
+                    : false;
+                  const colorClass = statusColors && (statusColors[val] || (isCustomSelectValue ? statusColors[col.customOptionLabel!] : undefined));
 
                   if (col.type === 'photos') {
                     return <PhotoCell key={String(col.key)} rowId={row.id} colKey={col.key} val={val} onAdd={handlePhotos} onRemove={removePhoto} />;
@@ -115,21 +120,76 @@ export default function EditableTable<T extends { id: string }>({
                     );
                   }
 
-                  if (col.type === 'select' && col.options) {
+                  if (col.type === 'link') {
+                    const href = formatHref(val);
+
                     return (
-                      <td key={String(col.key)} className="px-3 py-2">
+                      <td
+                        key={String(col.key)}
+                        className="px-3 py-2 cursor-text"
+                        onClick={() => setEditingCell({ rowId: row.id, key: String(col.key) })}
+                      >
+                        {isEditing ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            value={val}
+                            onChange={e => handleChange(row.id, col.key, e.target.value)}
+                            onBlur={() => setEditingCell(null)}
+                            onKeyDown={e => e.key === 'Enter' && setEditingCell(null)}
+                            className="w-full bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                        ) : href ? (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block truncate max-w-[200px] text-primary underline-offset-2 hover:underline"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            {val}
+                          </a>
+                        ) : (
+                          <span className="block truncate max-w-[200px] text-muted-foreground">â€”</span>
+                        )}
+                      </td>
+                    );
+                  }
+
+                  if (col.type === 'select' && col.options) {
+                    const selectValue = val && col.options.includes(val)
+                      ? val
+                      : isCustomSelectValue
+                        ? col.customOptionLabel!
+                        : '';
+
+                    return (
+                      <td key={String(col.key)} className="px-3 py-2 space-y-1">
                         <select
-                          value={val}
+                          value={selectValue}
                           onChange={e => handleChange(row.id, col.key, e.target.value)}
                           className={cn(
                             'text-xs font-medium px-2 py-1 rounded-md border-none focus:ring-1 focus:ring-primary cursor-pointer',
                             colorClass || 'bg-secondary'
                           )}
                         >
+                          <option value="">-</option>
                           {col.options.map(opt => (
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
+                        {col.customOptionLabel && (selectValue === col.customOptionLabel || isCustomSelectValue) && (
+                          <input
+                            type="text"
+                            value={val === col.customOptionLabel ? '' : val}
+                            onChange={e => handleChange(row.id, col.key, e.target.value)}
+                            placeholder={col.customOptionPlaceholder || col.customOptionLabel}
+                            className={cn(
+                              'w-full bg-background border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary',
+                              colorClass || 'border-border'
+                            )}
+                          />
+                        )}
                       </td>
                     );
                   }
@@ -174,6 +234,13 @@ export default function EditableTable<T extends { id: string }>({
       </button>
     </div>
   );
+}
+
+function formatHref(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }
 
 function PhotoCell<T>({ rowId, colKey, val, onAdd, onRemove }: {

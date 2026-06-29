@@ -13,12 +13,14 @@ const rechercheColumns: ColumnDef<Recherche>[] = [
   { key: 'visite', label: 'Visite', type: 'date', width: '150px' },
   { key: 'bien', label: 'Biens', width: '120px' },
   { key: 'adresse', label: 'Adresse', width: '180px' },
+  { key: 'statut', label: 'Statut', type: 'select', options: ['À appeler', 'Proposé', 'À étudier', 'MSS vocal', 'Visité', 'Autre'], customOptionLabel: 'Autre', customOptionPlaceholder: 'Préciser...', width: '150px' },
+  { key: 'offre', label: 'Offre', type: 'select', options: ['Non', 'Oui'], width: '90px' },
   { key: 'prix', label: 'Prix', width: '100px' },
   { key: 'prixM2', label: 'Prix m²', width: '90px' },
   { key: 'marge', label: 'Marge', width: '80px' },
   { key: 'nego', label: 'Négo', width: '80px' },
   { key: 'agence', label: 'Agence', width: '120px' },
-  { key: 'lien', label: 'Lien', width: '120px' },
+  { key: 'lien', label: 'Lien', type: 'link', width: '120px' },
   { key: 'infos', label: 'Infos', width: '150px' },
 ];
 
@@ -53,8 +55,54 @@ const travauxStatusColors: Record<string, string> = {
   'En cours': 'bg-primary/20 text-primary',
 };
 
+const rechercheStatusColors: Record<string, string> = {
+  'À appeler': 'bg-red-100 text-red-700',
+  'Proposé': 'bg-orange-100 text-orange-700',
+  'À étudier': 'bg-blue-100 text-blue-700',
+  'MSS vocal': 'bg-black text-white',
+  'Visité': 'bg-green-100 text-green-700',
+  Autre: 'bg-violet-100 text-violet-700',
+};
+
 export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailProps) {
   const update = (partial: Partial<Member>) => onUpdate({ ...member, ...partial });
+
+  const updateRecherches = (recherches: Recherche[]) => {
+    const offres = recherches.reduce((nextOffres, recherche) => {
+      if (recherche.offre !== 'Oui') return nextOffres;
+
+      const existingIndex = nextOffres.findIndex(o => o.sourceRechercheId === recherche.id);
+      const syncedFields = {
+        sourceRechercheId: recherche.id,
+        type: recherche.bien,
+        adresse: recherche.adresse,
+        prixAffiche: recherche.prix,
+        date: recherche.date || recherche.visite,
+        agence: recherche.agence,
+      };
+
+      if (existingIndex >= 0) {
+        return nextOffres.map((offre, index) => (
+          index === existingIndex ? { ...offre, ...syncedFields } : offre
+        ));
+      }
+
+      return [
+        ...nextOffres,
+        {
+          id: `recherche-${recherche.id}`,
+          ...syncedFields,
+          statut: 'En attente' as const,
+          prixPropose: '',
+          prixAchete: '',
+          commentaire: recherche.infos,
+          photos: '',
+        },
+      ];
+    }, member.offres);
+
+    onUpdate({ ...member, recherches, offres });
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -82,8 +130,9 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
         <EditableTable
           columns={rechercheColumns}
           rows={member.recherches}
-          onUpdate={r => update({ recherches: r })}
-          createEmpty={() => ({ id: Date.now().toString(), date: '', visite: '', bien: '', adresse: '', prix: '', prixM2: '', marge: '', nego: '', agence: '', lien: '', infos: '' })}
+          onUpdate={updateRecherches}
+          createEmpty={() => ({ id: Date.now().toString(), date: '', visite: '', bien: '', adresse: '', statut: '', offre: 'Non', prix: '', prixM2: '', marge: '', nego: '', agence: '', lien: '', infos: '' })}
+          statusColors={rechercheStatusColors}
         />
       </section>
 

@@ -16,6 +16,8 @@ export interface Recherche {
   visite: string;
   bien: string;
   adresse: string;
+  statut: string;
+  offre: string;
   prix: string;
   prixM2: string;
   marge: string;
@@ -27,6 +29,7 @@ export interface Recherche {
 
 export interface Offre {
   id: string;
+  sourceRechercheId?: string;
   type: string;
   adresse: string;
   statut: StatusOffre;
