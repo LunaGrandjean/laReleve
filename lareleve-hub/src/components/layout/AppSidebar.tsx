@@ -49,8 +49,9 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
         )}
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-sidebar-border">
-          <button onClick={onLogoClick} className="text-xl font-bold text-primary tracking-wide">
-            LaReleve
+          <button onClick={onLogoClick} className="flex items-center gap-3 text-xl font-bold text-primary tracking-wide">
+            <img src="/icon.jpg" alt="" className="h-8 w-8 rounded object-cover" />
+            LaRelève
           </button>
           <button onClick={() => setMobileOpen(false)} className="lg:hidden text-sidebar-foreground">
             <X size={20} />
@@ -76,7 +77,7 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
         </nav>
 
         <div className="px-6 py-4 border-t border-sidebar-border">
-          <p className="text-xs text-muted-foreground">© 2026 LaReleve</p>
+          <p className="text-xs text-muted-foreground">© LaRelève - l'incubateur de MDB</p>
         </div>
       </aside>
     </>
