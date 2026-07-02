@@ -21,7 +21,7 @@ const rechercheColumns: ColumnDef<Recherche>[] = [
   { key: 'nego', label: 'Négo', width: '80px' },
   { key: 'agence', label: 'Agence', width: '120px' },
   { key: 'lien', label: 'Lien', type: 'link', width: '120px' },
-  { key: 'infos', label: 'Infos', width: '150px' },
+  { key: 'infos', label: 'Infos', type: 'textarea', width: '220px' },
 ];
 
 const offreColumns: ColumnDef<Offre>[] = [

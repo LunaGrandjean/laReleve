@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 export interface ColumnDef<T> {
   key: keyof T;
   label: string;
-  type?: 'text' | 'select' | 'date' | 'photos' | 'link';
+  type?: 'text' | 'select' | 'date' | 'photos' | 'link' | 'textarea';
   options?: string[];
   customOptionLabel?: string;
   customOptionPlaceholder?: string;
@@ -189,6 +189,28 @@ export default function EditableTable<T extends { id: string }>({
                               colorClass || 'border-border'
                             )}
                           />
+                        )}
+                      </td>
+                    );
+                  }
+
+                  if (col.type === 'textarea') {
+                    return (
+                      <td
+                        key={String(col.key)}
+                        className="px-3 py-2 cursor-text align-top"
+                        onClick={() => setEditingCell({ rowId: row.id, key: String(col.key) })}
+                      >
+                        {isEditing ? (
+                          <textarea
+                            autoFocus
+                            value={val}
+                            onChange={e => handleChange(row.id, col.key, e.target.value)}
+                            onBlur={() => setEditingCell(null)}
+                            className="w-full min-h-24 bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-y"
+                          />
+                        ) : (
+                          <span className="block max-w-[260px] whitespace-pre-wrap break-words">{val || 'â€”'}</span>
                         )}
                       </td>
                     );
