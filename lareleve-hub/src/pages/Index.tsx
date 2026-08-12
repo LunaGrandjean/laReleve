@@ -11,7 +11,7 @@ import DocumentsPage from '@/components/documents/DocumentsPage';
 type Tab = 'home' | 'contacts' | 'members' | 'documents';
 
 export default function Index() {
-  const { data, setContacts, addMember, deleteMember, updateMember } = useAppData();
+  const { data, setContacts, setEntrepreneurContacts, addMember, deleteMember, updateMember } = useAppData();
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
@@ -37,7 +37,14 @@ export default function Index() {
       case 'home':
         return <Dashboard data={data} onSelectMember={setSelectedMemberId} />;
       case 'contacts':
-        return <ContactsPage contacts={data.contacts} setContacts={setContacts} />;
+        return (
+          <ContactsPage
+            contacts={data.contacts}
+            setContacts={setContacts}
+            entrepreneurContacts={data.entrepreneurContacts}
+            setEntrepreneurContacts={setEntrepreneurContacts}
+          />
+        );
       case 'members':
         return (
           <MembersPage

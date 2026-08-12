@@ -4,6 +4,8 @@ import EditableTable, { ColumnDef } from '../shared/EditableTable';
 interface ContactsPageProps {
   contacts: Contact[];
   setContacts: (contacts: Contact[]) => void;
+  entrepreneurContacts: Contact[];
+  setEntrepreneurContacts: (contacts: Contact[]) => void;
 }
 
 const columns: ColumnDef<Contact>[] = [
@@ -23,11 +25,25 @@ const createEmpty = (): Contact => ({
   commentaire: '',
 });
 
-export default function ContactsPage({ contacts, setContacts }: ContactsPageProps) {
+export default function ContactsPage({
+  contacts,
+  setContacts,
+  entrepreneurContacts,
+  setEntrepreneurContacts,
+}: ContactsPageProps) {
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       <h1 className="text-2xl font-bold">Contacts</h1>
-      <EditableTable columns={columns} rows={contacts} onUpdate={setContacts} createEmpty={createEmpty} />
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Contacts membres</h2>
+        <EditableTable columns={columns} rows={contacts} onUpdate={setContacts} createEmpty={createEmpty} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Contacts entrepreneurs</h2>
+        <EditableTable columns={columns} rows={entrepreneurContacts} onUpdate={setEntrepreneurContacts} createEmpty={createEmpty} />
+      </section>
     </div>
   );
 }

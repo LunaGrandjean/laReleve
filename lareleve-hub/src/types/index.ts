@@ -62,4 +62,5 @@ export interface Member {
 export interface AppData {
   members: Member[];
   contacts: Contact[];
+  entrepreneurContacts: Contact[];
 }

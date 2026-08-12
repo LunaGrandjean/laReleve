@@ -1,4 +1,4 @@
-import { Member, Recherche, Offre, Travaux } from '@/types';
+import { Member, Recherche, Offre } from '@/types';
 import { ArrowLeft } from 'lucide-react';
 import EditableTable, { ColumnDef } from '../shared/EditableTable';
 
@@ -37,12 +37,6 @@ const offreColumns: ColumnDef<Offre>[] = [
   { key: 'photos', label: 'Photos', type: 'photos', width: '180px' },
 ];
 
-const travauxColumns: ColumnDef<Travaux>[] = [
-  { key: 'tache', label: 'Tâche', width: '200px' },
-  { key: 'statut', label: 'Statut', type: 'select', options: ['Réalisé', 'En cours'], width: '120px' },
-  { key: 'cout', label: 'Coût', width: '100px' },
-  { key: 'date', label: 'Date', width: '100px' },
-];
 
 const offreStatusColors: Record<string, string> = {
   'Acceptée': 'bg-success/20 text-success',
@@ -50,10 +44,6 @@ const offreStatusColors: Record<string, string> = {
   'Refusée': 'bg-destructive/20 text-destructive',
 };
 
-const travauxStatusColors: Record<string, string> = {
-  'Réalisé': 'bg-success/20 text-success',
-  'En cours': 'bg-primary/20 text-primary',
-};
 
 const rechercheStatusColors: Record<string, string> = {
   'À appeler': 'bg-red-100 text-red-700',
@@ -145,18 +135,6 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
           onUpdate={o => update({ offres: o })}
           createEmpty={() => ({ id: Date.now().toString(), type: '', adresse: '', statut: 'En attente' as const, prixAffiche: '', prixPropose: '', prixAchete: '', date: '', commentaire: '', agence: '', photos: '' })}
           statusColors={offreStatusColors}
-        />
-      </section>
-
-      {/* Travaux */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Travaux</h2>
-        <EditableTable
-          columns={travauxColumns}
-          rows={member.travaux}
-          onUpdate={t => update({ travaux: t })}
-          createEmpty={() => ({ id: Date.now().toString(), tache: '', statut: 'En cours' as const, cout: '', date: '' })}
-          statusColors={travauxStatusColors}
         />
       </section>
     </div>

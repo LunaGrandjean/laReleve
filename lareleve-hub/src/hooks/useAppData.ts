@@ -13,6 +13,10 @@ export function useAppData() {
     setData(prev => ({ ...prev, contacts }));
   }, []);
 
+  const setEntrepreneurContacts = useCallback((entrepreneurContacts: Contact[]) => {
+    setData(prev => ({ ...prev, entrepreneurContacts }));
+  }, []);
+
   const addMember = useCallback((name: string) => {
     const newMember: Member = {
       id: Date.now().toString(),
@@ -36,5 +40,5 @@ export function useAppData() {
     }));
   }, []);
 
-  return { data, setContacts, addMember, deleteMember, updateMember };
+  return { data, setContacts, setEntrepreneurContacts, addMember, deleteMember, updateMember };
 }

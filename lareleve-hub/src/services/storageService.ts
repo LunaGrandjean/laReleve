@@ -13,10 +13,17 @@ export const storageService = {
   load: (): AppData => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const data = JSON.parse(raw);
+        return {
+          members: data.members || [],
+          contacts: data.contacts || [],
+          entrepreneurContacts: data.entrepreneurContacts || [],
+        };
+      }
     } catch (e) {
       console.error('Failed to load data:', e);
     }
-    return { members: [], contacts: [] };
+    return { members: [], contacts: [], entrepreneurContacts: [] };
   },
 };
