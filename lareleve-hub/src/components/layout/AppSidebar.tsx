@@ -1,8 +1,8 @@
-import { Home, Users, BookUser, FolderOpen, Menu, X } from 'lucide-react';
+import { ClipboardList, Home, Users, BookUser, FolderOpen, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
-type Tab = 'home' | 'contacts' | 'members' | 'documents';
+type Tab = 'home' | 'contacts' | 'members' | 'documents' | 'construction';
 
 interface SidebarProps {
   activeTab: Tab;
@@ -15,6 +15,7 @@ const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'contacts', label: 'Contacts', icon: BookUser },
   { id: 'members', label: 'Membres', icon: Users },
   { id: 'documents', label: 'Offres / Docs', icon: FolderOpen },
+  { id: 'construction', label: 'Suivi chantier', icon: ClipboardList },
 ];
 
 export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: SidebarProps) {

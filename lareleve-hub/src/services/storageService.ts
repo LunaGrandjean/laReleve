@@ -3,6 +3,7 @@ import { AppData } from '../types';
 const STORAGE_KEY = 'lareleve_data_v1';
 const DOCUMENTS_STORAGE_KEY = 'lareleve_documents_v1';
 const ROOT_FILES_STORAGE_KEY = 'lareleve_documents_root_files_v1';
+const CONSTRUCTION_STORAGE_KEY = 'lareleve_chantier_v1';
 
 const normalizeData = (data: Partial<AppData> | null | undefined): AppData => ({
   members: data?.members || [],
@@ -40,12 +41,14 @@ export const storageService = {
     appData: storageService.load(),
     documents: readJson(DOCUMENTS_STORAGE_KEY),
     rootFiles: readJson(ROOT_FILES_STORAGE_KEY),
+    construction: readJson(CONSTRUCTION_STORAGE_KEY),
   }),
   importAll: (backup: unknown): void => {
     const data = backup as {
       appData?: Partial<AppData>;
       documents?: unknown;
       rootFiles?: unknown;
+      construction?: unknown;
       members?: AppData['members'];
       contacts?: AppData['contacts'];
       entrepreneurContacts?: AppData['entrepreneurContacts'];
@@ -61,6 +64,11 @@ export const storageService = {
     if ('rootFiles' in data) {
       if (data.rootFiles) localStorage.setItem(ROOT_FILES_STORAGE_KEY, JSON.stringify(data.rootFiles));
       else localStorage.removeItem(ROOT_FILES_STORAGE_KEY);
+    }
+
+    if ('construction' in data) {
+      if (data.construction) localStorage.setItem(CONSTRUCTION_STORAGE_KEY, JSON.stringify(data.construction));
+      else localStorage.removeItem(CONSTRUCTION_STORAGE_KEY);
     }
   },
 };

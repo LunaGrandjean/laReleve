@@ -7,8 +7,9 @@ import ContactsPage from '@/components/contacts/ContactsPage';
 import MembersPage from '@/components/members/MembersPage';
 import MemberDetail from '@/components/members/MemberDetail';
 import DocumentsPage from '@/components/documents/DocumentsPage';
+import ConstructionPage from '@/components/construction/ConstructionPage';
 
-type Tab = 'home' | 'contacts' | 'members' | 'documents';
+type Tab = 'home' | 'contacts' | 'members' | 'documents' | 'construction';
 
 export default function Index() {
   const { data, setContacts, setEntrepreneurContacts, addMember, deleteMember, updateMember } = useAppData();
@@ -56,6 +57,8 @@ export default function Index() {
         );
       case 'documents':
         return <DocumentsPage />;
+      case 'construction':
+        return <ConstructionPage />;
       default:
         return null;
     }
