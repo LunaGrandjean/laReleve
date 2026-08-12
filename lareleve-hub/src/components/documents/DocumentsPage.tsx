@@ -19,7 +19,6 @@ interface FolderStructure {
 }
 
 const STORAGE_KEY = 'lareleve_documents_v1';
-const ROOT_FILES_STORAGE_KEY = 'lareleve_documents_root_files_v1';
 
 const defaultStructure = (): FolderStructure => ({
   paris: {
@@ -56,21 +55,8 @@ function saveDocuments(docs: FolderStructure) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
 }
 
-function loadRootFiles(): StoredFile[] {
-  try {
-    const raw = localStorage.getItem(ROOT_FILES_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-function saveRootFiles(files: StoredFile[]) {
-  localStorage.setItem(ROOT_FILES_STORAGE_KEY, JSON.stringify(files));
-}
-
 export default function DocumentsPage() {
   const [structure, setStructure] = useState<FolderStructure>(loadDocuments);
-  const [rootFiles, setRootFiles] = useState<StoredFile[]>(loadRootFiles);
   const [path, setPath] = useState<string[]>([]); // breadcrumb path
   const [showAddFolder, setShowAddFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -79,16 +65,12 @@ export default function DocumentsPage() {
     saveDocuments(structure);
   }, [structure]);
 
-  useEffect(() => {
-    saveRootFiles(rootFiles);
-  }, [rootFiles]);
-
   // Navigate to current node
   const getCurrentNode = (): { subfolders: FolderNode[]; files: StoredFile[]; parent: 'root' | FolderNode } => {
     if (path.length === 0) {
       return {
         subfolders: Object.values(structure),
-        files: rootFiles,
+        files: [],
         parent: 'root',
       };
     }
@@ -152,24 +134,19 @@ export default function DocumentsPage() {
   };
 
   const handleFileUpload = (files: FileList) => {
+    if (path.length === 0) return;
+
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = () => {
-        const newFile = {
-          name: file.name,
-          data: reader.result as string,
-          type: file.type,
-          addedAt: new Date().toISOString(),
-        };
-
-        if (path.length === 0) {
-          setRootFiles(prev => [...prev, newFile]);
-          return;
-        }
-
         updateNodeAtPath(node => ({
           ...node,
-          files: [...node.files, newFile],
+          files: [...node.files, {
+            name: file.name,
+            data: reader.result as string,
+            type: file.type,
+            addedAt: new Date().toISOString(),
+          }],
         }));
       };
       reader.readAsDataURL(file);
@@ -177,11 +154,6 @@ export default function DocumentsPage() {
   };
 
   const removeFile = (fileName: string) => {
-    if (path.length === 0) {
-      setRootFiles(prev => prev.filter(f => f.name !== fileName));
-      return;
-    }
-
     updateNodeAtPath(node => ({
       ...node,
       files: node.files.filter(f => f.name !== fileName),
@@ -255,16 +227,18 @@ export default function DocumentsPage() {
         >
           <FolderPlus size={16} /> Nouveau dossier
         </button>
-        <label className="flex items-center gap-2 px-4 py-2 bg-noir text-primary-foreground rounded-lg text-sm font-medium hover:bg-noir-light transition-default cursor-pointer">
-          <FileUp size={16} /> Ajouter un fichier
-          <input
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
-            className="hidden"
-            onChange={e => e.target.files && handleFileUpload(e.target.files)}
-          />
-        </label>
+        {path.length > 0 && (
+          <label className="flex items-center gap-2 px-4 py-2 bg-noir text-primary-foreground rounded-lg text-sm font-medium hover:bg-noir-light transition-default cursor-pointer">
+            <FileUp size={16} /> Ajouter un fichier
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
+              className="hidden"
+              onChange={e => e.target.files && handleFileUpload(e.target.files)}
+            />
+          </label>
+        )}
       </div>
 
       {/* Add folder dialog */}
