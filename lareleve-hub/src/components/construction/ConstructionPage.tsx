@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ConstructionView = 'chantier' | 'budget' | 'reserves' | 'legende';
@@ -52,6 +52,11 @@ interface ConstructionData {
   tasks: ChantierTask[];
   budgets: BudgetRow[];
   reserves: ReserveRow[];
+}
+
+interface ConstructionProject extends ConstructionData {
+  id: string;
+  createdAt: string;
 }
 
 const STORAGE_KEY = 'lareleve_chantier_v1';
@@ -126,12 +131,13 @@ function task(id: string, piece: string, lot: string, entreprise: string, descri
   };
 }
 
-const initialData = (): ConstructionData => ({
+const initialData = (meta?: Partial<ConstructionMeta>): ConstructionData => ({
   meta: {
     operation: "[Adresse de l'appartement]",
     maitreOuvrage: '[Nom]',
     maitreOeuvre: '[Nom du MOE]',
     updatedAt: new Date().toISOString().slice(0, 10),
+    ...meta,
   },
   tasks: seedTasks,
   budgets: seedTasks.map(t => ({
@@ -154,62 +160,112 @@ const initialData = (): ConstructionData => ({
   })),
 });
 
-function loadData(): ConstructionData {
+function createProject(meta: Partial<ConstructionMeta>): ConstructionProject {
+  const now = new Date().toISOString();
+  return {
+    id: Date.now().toString(),
+    createdAt: now,
+    ...initialData(meta),
+  };
+}
+
+function normalizeProject(project: Partial<ConstructionProject>): ConstructionProject {
+  const fallback = initialData();
+  return {
+    id: project.id || Date.now().toString(),
+    createdAt: project.createdAt || new Date().toISOString(),
+    meta: { ...fallback.meta, ...project.meta },
+    tasks: project.tasks || fallback.tasks,
+    budgets: project.budgets || fallback.budgets,
+    reserves: project.reserves || fallback.reserves,
+  };
+}
+
+function loadProjects(): ConstructionProject[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      return {
-        ...initialData(),
-        ...data,
-        meta: { ...initialData().meta, ...data.meta },
-        tasks: data.tasks || [],
-        budgets: data.budgets || [],
-        reserves: data.reserves || [],
-      };
+      if (Array.isArray(data)) return data.map(normalizeProject);
+      if (data.projects && Array.isArray(data.projects)) return data.projects.map(normalizeProject);
+      if (data.meta || data.tasks || data.budgets || data.reserves) return [normalizeProject(data)];
     }
   } catch {}
-  return initialData();
+  return [];
 }
 
 export default function ConstructionPage() {
-  const [data, setData] = useState<ConstructionData>(loadData);
+  const [projects, setProjects] = useState<ConstructionProject[]>(loadProjects);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [view, setView] = useState<ConstructionView>('chantier');
+  const data = projects.find(project => project.id === selectedProjectId);
+  const activeData = data || initialData();
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  }, [projects]);
 
-  const syncedBudgets = useMemo(() => syncBudgets(data.tasks, data.budgets), [data.tasks, data.budgets]);
-  const roomSummary = useMemo(() => buildRoomSummary(data.tasks, syncedBudgets), [data.tasks, syncedBudgets]);
+  const updateProject = (updater: (project: ConstructionProject) => ConstructionProject) => {
+    if (!selectedProjectId) return;
+    setProjects(prev => prev.map(project => (project.id === selectedProjectId ? updater(project) : project)));
+  };
+
+  const handleCreateProject = (meta: Partial<ConstructionMeta>) => {
+    const project = createProject(meta);
+    setProjects(prev => [...prev, project]);
+    setSelectedProjectId(project.id);
+    setView('chantier');
+  };
+
+  const deleteProject = (id: string) => {
+    setProjects(prev => prev.filter(project => project.id !== id));
+    if (selectedProjectId === id) setSelectedProjectId(null);
+  };
+
+  const syncedBudgets = useMemo(() => syncBudgets(activeData.tasks, activeData.budgets), [activeData.tasks, activeData.budgets]);
+  const roomSummary = useMemo(() => buildRoomSummary(activeData.tasks, syncedBudgets), [activeData.tasks, syncedBudgets]);
+
+  if (!data) {
+    return (
+      <ConstructionProjectsList
+        projects={projects}
+        onCreate={handleCreateProject}
+        onOpen={id => {
+          setSelectedProjectId(id);
+          setView('chantier');
+        }}
+        onDelete={deleteProject}
+      />
+    );
+  }
 
   const updateMeta = (key: keyof ConstructionMeta, value: string) => {
-    setData(prev => ({ ...prev, meta: { ...prev.meta, [key]: value } }));
+    updateProject(prev => ({ ...prev, meta: { ...prev.meta, [key]: value } }));
   };
 
   const updateTask = (id: string, key: keyof ChantierTask, value: string) => {
-    setData(prev => ({
+    updateProject(prev => ({
       ...prev,
       tasks: prev.tasks.map(t => (t.id === id ? { ...t, [key]: value } : t)),
     }));
   };
 
   const updateBudget = (taskId: string, key: keyof BudgetRow, value: string) => {
-    setData(prev => ({
+    updateProject(prev => ({
       ...prev,
       budgets: syncBudgets(prev.tasks, prev.budgets).map(b => (b.taskId === taskId ? { ...b, [key]: value } : b)),
     }));
   };
 
   const updateReserve = (id: string, key: keyof ReserveRow, value: string) => {
-    setData(prev => ({
+    updateProject(prev => ({
       ...prev,
       reserves: prev.reserves.map(r => (r.id === id ? { ...r, [key]: value } : r)),
     }));
   };
 
   const addTask = () => {
-    setData(prev => {
+    updateProject(prev => {
       const id = Date.now().toString();
       const newTask = task(id, '', '', '', '', '', '', '', '', '', '0');
       return {
@@ -221,7 +277,7 @@ export default function ConstructionPage() {
   };
 
   const deleteTask = (id: string) => {
-    setData(prev => ({
+    updateProject(prev => ({
       ...prev,
       tasks: prev.tasks.filter(t => t.id !== id),
       budgets: prev.budgets.filter(b => b.taskId !== id),
@@ -229,23 +285,28 @@ export default function ConstructionPage() {
   };
 
   const addReserve = () => {
-    setData(prev => ({
+    updateProject(prev => ({
       ...prev,
       reserves: [...prev.reserves, { id: Date.now().toString(), dateConstat: '', piece: '', lot: '', description: '', entreprise: '', dateLimite: '', dateLevee: '' }],
     }));
   };
 
   const deleteReserve = (id: string) => {
-    setData(prev => ({ ...prev, reserves: prev.reserves.filter(r => r.id !== id) }));
+    updateProject(prev => ({ ...prev, reserves: prev.reserves.filter(r => r.id !== id) }));
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="space-y-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Suivi chantier</h1>
-            <p className="text-sm text-muted-foreground">Rénovation appartement - maître d'oeuvre</p>
+          <div className="flex items-start gap-3">
+            <button onClick={() => setSelectedProjectId(null)} className="p-2 rounded-md hover:bg-secondary transition-default" title="Retour aux chantiers">
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold">{data.meta.operation || 'Suivi chantier'}</h1>
+              <p className="text-sm text-muted-foreground">Rénovation appartement - maître d'oeuvre</p>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
             <MetaInput label="Opération" value={data.meta.operation} onChange={v => updateMeta('operation', v)} />
@@ -286,6 +347,115 @@ export default function ConstructionPage() {
         <ReservesTable reserves={data.reserves} onUpdate={updateReserve} onAdd={addReserve} onDelete={deleteReserve} />
       )}
       {view === 'legende' && <Legend />}
+    </div>
+  );
+}
+
+function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete }: {
+  projects: ConstructionProject[];
+  onCreate: (meta: Partial<ConstructionMeta>) => void;
+  onOpen: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [operation, setOperation] = useState('');
+  const [maitreOuvrage, setMaitreOuvrage] = useState('');
+  const [maitreOeuvre, setMaitreOeuvre] = useState('');
+  const [updatedAt, setUpdatedAt] = useState(new Date().toISOString().slice(0, 10));
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const handleCreate = () => {
+    if (!operation.trim()) return;
+    onCreate({
+      operation: operation.trim(),
+      maitreOuvrage: maitreOuvrage.trim() || '[Nom]',
+      maitreOeuvre: maitreOeuvre.trim() || '[Nom du MOE]',
+      updatedAt,
+    });
+    setOperation('');
+    setMaitreOuvrage('');
+    setMaitreOeuvre('');
+    setUpdatedAt(new Date().toISOString().slice(0, 10));
+    setShowForm(false);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirmDelete === id) {
+      onDelete(id);
+      setConfirmDelete(null);
+    } else {
+      setConfirmDelete(id);
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Suivi chantier</h1>
+          <p className="text-sm text-muted-foreground">Crée un dossier par opération, puis ouvre ses tableaux.</p>
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-default"
+        >
+          <Plus size={16} /> Ajouter un chantier
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="border border-border rounded-lg p-4 bg-card space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <MetaInput label="Opération" value={operation} onChange={setOperation} />
+            <MetaInput label="Maître d'ouvrage" value={maitreOuvrage} onChange={setMaitreOuvrage} />
+            <MetaInput label="Maître d'oeuvre" value={maitreOeuvre} onChange={setMaitreOeuvre} />
+            <MetaInput label="Mise à jour" type="date" value={updatedAt} onChange={setUpdatedAt} />
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleCreate} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-default">
+              Créer le chantier
+            </button>
+            <button onClick={() => setShowForm(false)} className="px-4 py-2 bg-secondary rounded-md text-sm font-medium hover:bg-secondary/80 transition-default">
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {projects.map(project => (
+          <div key={project.id} className="bg-card border border-border rounded-lg p-5 shadow-card hover:shadow-elevated transition-default">
+            <div className="space-y-1">
+              <h3 className="font-semibold text-lg">{project.meta.operation || 'Opération sans nom'}</h3>
+              <p className="text-sm text-muted-foreground">Maître d'ouvrage : {project.meta.maitreOuvrage || '-'}</p>
+              <p className="text-sm text-muted-foreground">Maître d'oeuvre : {project.meta.maitreOeuvre || '-'}</p>
+              <p className="text-xs text-muted-foreground">Mise à jour : {formatDate(project.meta.updatedAt)}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 my-4 text-center">
+              <MiniStat label="Tâches" value={project.tasks.length} />
+              <MiniStat label="Budget" value={formatEuro(totalBudget(project))} />
+              <MiniStat label="Réserves" value={project.reserves.filter(r => r.dateConstat).length} />
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-border">
+              <button onClick={() => onOpen(project.id)} className="flex items-center gap-1 text-primary font-medium text-sm hover:underline">
+                Ouvrir <ChevronRight size={14} />
+              </button>
+              <button
+                onClick={() => handleDelete(project.id)}
+                className={cn('flex items-center gap-1 text-sm font-medium transition-default', confirmDelete === project.id ? 'text-destructive' : 'text-muted-foreground hover:text-destructive')}
+              >
+                <Trash2 size={14} />
+                {confirmDelete === project.id ? 'Confirmer ?' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        ))}
+        {projects.length === 0 && (
+          <p className="text-muted-foreground col-span-full text-center py-12">
+            Aucun chantier. Clique sur Ajouter un chantier pour créer ton premier dossier.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -515,6 +685,15 @@ function MetaInput({ label, value, onChange, type = 'text' }: { label: string; v
   );
 }
 
+function MiniStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-md bg-secondary px-2 py-2">
+      <div className="text-sm font-semibold">{value}</div>
+      <div className="text-[11px] text-muted-foreground uppercase">{label}</div>
+    </div>
+  );
+}
+
 function Input({ value, onChange, type = 'text', className }: { value: string; onChange: (value: string) => void; type?: string; className?: string }) {
   return <input value={value} type={type} onChange={e => onChange(e.target.value)} className={cn('w-32 bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary', className)} />;
 }
@@ -613,6 +792,12 @@ function buildRoomSummary(tasks: ChantierTask[], budgets: BudgetRow[]): RoomSumm
   return Array.from(grouped.values()).map(row => ({ ...row, progress: row.tasks ? row.progress / row.tasks : 0 }));
 }
 
+function totalBudget(project: ConstructionProject) {
+  return syncBudgets(project.tasks, project.budgets).reduce((total, budget) => (
+    total + money(budget.marcheHT) + money(budget.avenantsHT)
+  ), 0);
+}
+
 function parseDate(value: string) {
   if (!value) return null;
   const date = new Date(`${value}T00:00:00`);
@@ -635,4 +820,9 @@ function money(value: string) {
 
 function formatEuro(value: number) {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+}
+
+function formatDate(value: string) {
+  const date = parseDate(value);
+  return date ? date.toLocaleDateString('fr-FR') : '-';
 }
