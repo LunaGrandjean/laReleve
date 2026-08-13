@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, FileText, FileUp, Folder, FolderPlus, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileArchive, FileText, FileUp, Folder, FolderPlus, Plus, Trash2 } from 'lucide-react';
 
 interface StoredFile {
   name: string;
@@ -53,6 +53,93 @@ function loadDocuments(): FolderStructure {
 
 function saveDocuments(docs: FolderStructure) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+}
+
+function emptyFolder(name: string): FolderNode {
+  return { name, subfolders: [], files: [] };
+}
+
+function findFolderIndex(folders: FolderNode[], name: string) {
+  return folders.findIndex(folder => folder.name.toLowerCase() === name.toLowerCase());
+}
+
+function mergeFolder(target: FolderNode, incoming: FolderNode): FolderNode {
+  const merged: FolderNode = {
+    ...target,
+    files: [...target.files],
+    subfolders: [...target.subfolders],
+  };
+
+  incoming.files.forEach(file => {
+    const existingIndex = merged.files.findIndex(existing => existing.name === file.name);
+    if (existingIndex >= 0) merged.files[existingIndex] = file;
+    else merged.files.push(file);
+  });
+
+  incoming.subfolders.forEach(folder => {
+    const existingIndex = findFolderIndex(merged.subfolders, folder.name);
+    if (existingIndex >= 0) {
+      merged.subfolders[existingIndex] = mergeFolder(merged.subfolders[existingIndex], folder);
+    } else {
+      merged.subfolders.push(folder);
+    }
+  });
+
+  return merged;
+}
+
+function insertFileInFolder(folder: FolderNode, parts: string[], file: StoredFile) {
+  if (parts.length === 0) {
+    const existingIndex = folder.files.findIndex(existing => existing.name === file.name);
+    if (existingIndex >= 0) folder.files[existingIndex] = file;
+    else folder.files.push(file);
+    return;
+  }
+
+  const [folderName, ...rest] = parts;
+  let childIndex = findFolderIndex(folder.subfolders, folderName);
+  if (childIndex < 0) {
+    folder.subfolders.push(emptyFolder(folderName));
+    childIndex = folder.subfolders.length - 1;
+  }
+
+  insertFileInFolder(folder.subfolders[childIndex], rest, file);
+}
+
+async function readFile(file: File): Promise<StoredFile> {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve({
+        name: file.name,
+        data: reader.result as string,
+        type: file.type,
+        addedAt: new Date().toISOString(),
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function filesToFolder(files: FileList): Promise<FolderNode | null> {
+  const selectedFiles = Array.from(files);
+  const firstPath = selectedFiles[0]?.webkitRelativePath;
+  if (!firstPath) return null;
+
+  const rootName = firstPath.split('/')[0];
+  const root = emptyFolder(rootName);
+
+  for (const file of selectedFiles) {
+    const relativePath = file.webkitRelativePath || file.name;
+    const parts = relativePath.split('/').filter(Boolean);
+    const fileName = parts.pop();
+    if (!fileName) continue;
+
+    const folderParts = parts[0] === rootName ? parts.slice(1) : parts;
+    insertFileInFolder(root, folderParts, await readFile(file));
+  }
+
+  return root;
 }
 
 export default function DocumentsPage() {
@@ -151,6 +238,42 @@ export default function DocumentsPage() {
     });
   };
 
+  const handleFolderUpload = async (files: FileList) => {
+    const importedFolder = await filesToFolder(files);
+    if (!importedFolder) return;
+
+    if (path.length === 0) {
+      setStructure(prev => {
+        const next = JSON.parse(JSON.stringify(prev)) as FolderStructure;
+        const existingKey = Object.keys(next).find(key => next[key].name.toLowerCase() === importedFolder.name.toLowerCase());
+
+        if (existingKey) {
+          next[existingKey] = mergeFolder(next[existingKey], importedFolder);
+        } else {
+          next[importedFolder.name.toLowerCase()] = importedFolder;
+        }
+
+        return next;
+      });
+      return;
+    }
+
+    updateNodeAtPath(node => (
+      node.name.toLowerCase() === importedFolder.name.toLowerCase()
+        ? mergeFolder(node, importedFolder)
+        : {
+          ...node,
+          subfolders: (() => {
+            const subfolders = [...node.subfolders];
+            const existingIndex = findFolderIndex(subfolders, importedFolder.name);
+            if (existingIndex >= 0) subfolders[existingIndex] = mergeFolder(subfolders[existingIndex], importedFolder);
+            else subfolders.push(importedFolder);
+            return subfolders;
+          })(),
+        }
+    ));
+  };
+
   const removeFile = (fileName: string) => {
     updateNodeAtPath(node => ({
       ...node,
@@ -218,6 +341,19 @@ export default function DocumentsPage() {
         <button onClick={() => setShowAddFolder(true)} className="action-button-primary">
           <FolderPlus size={16} /> Nouveau dossier
         </button>
+        <label className="action-button cursor-pointer">
+          <FileArchive size={16} /> Importer un dossier
+          <input
+            type="file"
+            multiple
+            className="hidden"
+            {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+            onChange={e => {
+              if (e.target.files) handleFolderUpload(e.target.files);
+              e.currentTarget.value = '';
+            }}
+          />
+        </label>
         {path.length > 0 && (
           <label className="action-button cursor-pointer">
             <FileUp size={16} /> Ajouter un fichier
