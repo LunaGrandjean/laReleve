@@ -34,16 +34,24 @@ function loadConstructionStats() {
           ? [parsed]
           : [];
 
-    const tasks = projects.flatMap(project => Array.isArray(project.tasks) ? project.tasks : []);
-
-    return {
-      total: tasks.length,
-      enCours: tasks.filter(task => task.statut === 'En cours').length,
-      realises: tasks.filter(task => (
+    const projectStatuses = projects.map(project => {
+      const tasks = Array.isArray(project.tasks) ? project.tasks : [];
+      const completedTasks = tasks.filter(task => (
         task.statut === 'Terminé' ||
         task.statut === 'Termin\u00c3\u00a9' ||
         Number(task.avancement || 0) >= 100
-      )).length,
+      ));
+
+      return {
+        hasTasks: tasks.length > 0,
+        isComplete: tasks.length > 0 && completedTasks.length === tasks.length,
+      };
+    });
+
+    return {
+      total: projects.length,
+      enCours: projectStatuses.filter(project => project.hasTasks && !project.isComplete).length,
+      realises: projectStatuses.filter(project => project.isComplete).length,
     };
   } catch {
     return { total: 0, enCours: 0, realises: 0 };
@@ -68,9 +76,9 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
     offresAcceptees: data.members.reduce((a, m) => a + m.offres.filter(o => o.statut === 'Acceptée').length, 0),
     offresAttente: data.members.reduce((a, m) => a + m.offres.filter(o => o.statut === 'En attente').length, 0),
     offresRefusees: data.members.reduce((a, m) => a + m.offres.filter(o => o.statut === 'Refusée').length, 0),
-    travauxTotal: constructionStats.total,
-    travauxRealises: constructionStats.realises,
-    travauxEnCours: constructionStats.enCours,
+    chantiersTotal: constructionStats.total,
+    chantiersRealises: constructionStats.realises,
+    chantiersEnCours: constructionStats.enCours,
   };
 
   const recentActivity = data.members
@@ -110,9 +118,9 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
         <div className="space-y-3">
           <h3 className="section-title">03 — Travaux</h3>
           <div className="space-y-3">
-            <StatCard title="Travaux total" value={stats.travauxTotal} icon={<Hammer size={20} />} variant="primary" />
-            <StatCard title="En cours" value={stats.travauxEnCours} icon={<Clock size={20} />} variant="accent" />
-            <StatCard title="Réalisés" value={stats.travauxRealises} icon={<CheckCircle size={20} />} variant="success" />
+            <StatCard title="Chantiers total" value={stats.chantiersTotal} icon={<Hammer size={20} />} variant="primary" />
+            <StatCard title="En cours" value={stats.chantiersEnCours} icon={<Clock size={20} />} variant="accent" />
+            <StatCard title="Réalisés" value={stats.chantiersRealises} icon={<CheckCircle size={20} />} variant="success" />
           </div>
         </div>
       </div>
