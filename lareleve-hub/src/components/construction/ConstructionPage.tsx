@@ -296,7 +296,7 @@ export default function ConstructionPage() {
   const selectedPieceTasks = selectedPiece ? data.tasks.filter(task => task.piece === selectedPiece) : [];
 
   return (
-    <div className="max-w-full space-y-6 overflow-hidden animate-fade-in">
+    <div className="page-shell max-w-full overflow-hidden">
       <div className="space-y-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
@@ -304,8 +304,8 @@ export default function ConstructionPage() {
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-2xl font-bold">{data.meta.operation || 'Suivi chantier'}</h1>
-              <p className="text-sm text-muted-foreground">Dossier chantier par pièce</p>
+              <h1 className="page-title">{data.meta.operation || 'Suivi chantier'}</h1>
+              <p className="page-subtitle">Dossier chantier par pièce</p>
             </div>
           </div>
         </div>
@@ -390,22 +390,22 @@ function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete, onUpda
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="page-shell">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Suivi chantier</h1>
-          <p className="text-sm text-muted-foreground">Crée un dossier par opération, puis ouvre le suivi par pièce.</p>
+          <h1 className="page-title">Suivi chantier</h1>
+          <p className="page-subtitle">Crée un dossier par opération, puis ouvre le suivi par pièce.</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-default"
+          className="action-button-primary"
         >
           <Plus size={16} /> Ajouter un chantier
         </button>
       </div>
 
       {showForm && (
-        <div className="border border-border rounded-lg p-4 bg-card space-y-4">
+        <div className="premium-card space-y-4 p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             <MetaInput label="Opération" value={operation} onChange={setOperation} />
             <MetaInput label="Maître d'ouvrage" value={maitreOuvrage} onChange={setMaitreOuvrage} />
@@ -413,10 +413,10 @@ function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete, onUpda
             <MetaInput label="Mise à jour" type="date" value={updatedAt} onChange={setUpdatedAt} />
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleCreate} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-default">
+            <button onClick={handleCreate} className="action-button-primary">
               Créer le chantier
             </button>
-            <button onClick={() => setShowForm(false)} className="px-4 py-2 bg-secondary rounded-md text-sm font-medium hover:bg-secondary/80 transition-default">
+            <button onClick={() => setShowForm(false)} className="action-button">
               Annuler
             </button>
           </div>
@@ -425,7 +425,7 @@ function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete, onUpda
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {projects.map(project => (
-          <div key={project.id} className="bg-card border border-border rounded-lg p-5 shadow-card hover:shadow-elevated transition-default">
+          <div key={project.id} className="premium-card p-5">
             <div className="space-y-3">
               <MetaInput label="Opération" value={project.meta.operation} onChange={v => onUpdateMeta(project.id, 'operation', v)} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -482,7 +482,7 @@ function PiecesDashboard({ pieces, summary, onOpen, onAdd, onDelete }: {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Pièces du chantier</h2>
+          <h2 className="section-title">01 — Pièces du chantier</h2>
           <p className="text-sm text-muted-foreground">Clique sur une pièce pour ouvrir son tableau de suivi.</p>
         </div>
         <div className="flex gap-2">
@@ -495,7 +495,7 @@ function PiecesDashboard({ pieces, summary, onOpen, onAdd, onDelete }: {
             placeholder="Nouvelle pièce"
             className="w-48 bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           />
-          <button onClick={handleAdd} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-default">
+          <button onClick={handleAdd} className="action-button-primary">
             <Plus size={16} /> Ajouter
           </button>
         </div>
@@ -508,7 +508,7 @@ function PiecesDashboard({ pieces, summary, onOpen, onAdd, onDelete }: {
           return (
             <div
               key={piece.id}
-              className="group relative overflow-hidden bg-card border border-border rounded-lg shadow-card hover:-translate-y-0.5 hover:shadow-elevated hover:border-primary/40 transition-default"
+              className="premium-card group relative overflow-hidden"
             >
               <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
               <button onClick={() => onOpen(piece.name)} className="w-full p-4 text-left">
@@ -570,7 +570,7 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
         </button>
       </div>
 
-      <div className="rounded-lg border border-border bg-card p-4 shadow-card">
+      <div className="premium-card p-4">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
             <DoorOpen size={20} />
@@ -582,7 +582,7 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
         </div>
       </div>
 
-      <div className="max-w-full overflow-x-auto border border-border rounded-lg shadow-card">
+      <div className="table-shell">
         <table className="w-full min-w-[1320px] text-sm text-left">
           <thead className="bg-secondary border-b border-border">
             <tr>
@@ -630,7 +630,7 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
           </tbody>
         </table>
       </div>
-      <button onClick={onAdd} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-default">
+      <button onClick={onAdd} className="action-button-primary">
         <Plus size={16} /> Ajouter une ligne
       </button>
     </div>
@@ -646,7 +646,7 @@ function BudgetTable({ tasks, budgets, onUpdate, summary }: {
   const taskById = new Map(tasks.map(t => [t.id, t]));
   return (
     <div className="space-y-4">
-      <div className="max-w-full overflow-x-auto border border-border rounded-lg shadow-card">
+      <div className="table-shell">
         <table className="w-full min-w-[1150px] text-sm text-left">
           <thead className="bg-secondary border-b border-border">
             <tr>
@@ -710,7 +710,7 @@ function GlobalComments({ value, onChange }: { value: string; onChange: (value: 
       <textarea
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="min-h-[420px] w-full rounded-lg border border-border bg-card p-4 text-sm leading-6 shadow-card focus:outline-none focus:ring-1 focus:ring-primary resize-y"
+        className="min-h-[420px] w-full rounded-lg border border-white/[0.08] bg-white/[0.05] p-4 text-sm leading-6 text-white shadow-card focus:outline-none focus:ring-1 focus:ring-primary resize-y"
         placeholder="Écrire les notes du chantier..."
       />
     </div>
@@ -729,7 +729,7 @@ interface RoomSummary {
 function RoomSummaryTable({ summary, showBudget = false }: { summary: RoomSummary[]; showBudget?: boolean }) {
   if (!summary.length) return null;
   return (
-    <div className="max-w-full overflow-x-auto border border-border rounded-lg">
+    <div className="table-shell">
       <table className="w-full text-sm text-left">
         <thead className="bg-secondary border-b border-border">
           <tr>

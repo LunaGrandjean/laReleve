@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Plus, Trash2, ImagePlus, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ImagePlus, Plus, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ColumnDef<T> {
@@ -72,29 +72,33 @@ export default function EditableTable<T extends { id: string }>({
   };
 
   return (
-    <div className="space-y-2">
-      <div className="overflow-x-auto border border-border rounded-lg shadow-card">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-secondary border-b border-border">
+    <div className="space-y-3">
+      <div className="table-shell">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-white/[0.08] bg-white/[0.04]">
             <tr>
               {columns.map(col => (
-                <th key={String(col.key)} className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap" style={col.width ? { minWidth: col.width } : undefined}>
+                <th
+                  key={String(col.key)}
+                  className="whitespace-nowrap px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-white/50"
+                  style={col.width ? { minWidth: col.width } : undefined}
+                >
                   {col.label}
                 </th>
               ))}
-              <th className="px-3 py-2.5 w-10"></th>
+              <th className="w-10 px-3 py-2.5"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody className="divide-y divide-white/[0.08]">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={columns.length + 1} className="text-center py-6 text-muted-foreground">
+                <td colSpan={columns.length + 1} className="py-6 text-center text-white/50">
                   Aucune donnée
                 </td>
               </tr>
             )}
             {rows.map(row => (
-              <tr key={row.id} className="hover:bg-secondary/30 transition-default">
+              <tr key={row.id} className="transition-default hover:bg-white/[0.04]">
                 {columns.map(col => {
                   const val = String(row[col.key] ?? '');
                   const isEditing = editingCell?.rowId === row.id && editingCell?.key === String(col.key);
@@ -114,7 +118,7 @@ export default function EditableTable<T extends { id: string }>({
                           type="date"
                           value={val}
                           onChange={e => handleChange(row.id, col.key, e.target.value)}
-                          className="bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="rounded border border-white/[0.08] bg-white/[0.05] px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </td>
                     );
@@ -126,7 +130,7 @@ export default function EditableTable<T extends { id: string }>({
                     return (
                       <td
                         key={String(col.key)}
-                        className="px-3 py-2 cursor-text"
+                        className="cursor-text px-3 py-2"
                         onClick={() => setEditingCell({ rowId: row.id, key: String(col.key) })}
                       >
                         {isEditing ? (
@@ -137,20 +141,20 @@ export default function EditableTable<T extends { id: string }>({
                             onChange={e => handleChange(row.id, col.key, e.target.value)}
                             onBlur={() => setEditingCell(null)}
                             onKeyDown={e => e.key === 'Enter' && setEditingCell(null)}
-                            className="w-full bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-full rounded border border-primary bg-white/[0.07] px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary"
                           />
                         ) : href ? (
                           <a
                             href={href}
                             target="_blank"
                             rel="noreferrer"
-                            className="block truncate max-w-[200px] text-primary underline-offset-2 hover:underline"
+                            className="block max-w-[200px] truncate text-primary underline-offset-2 hover:underline"
                             onClick={e => e.stopPropagation()}
                           >
                             {val}
                           </a>
                         ) : (
-                          <span className="block truncate max-w-[200px] text-muted-foreground">â€”</span>
+                          <span className="block max-w-[200px] truncate text-muted-foreground">—</span>
                         )}
                       </td>
                     );
@@ -164,13 +168,13 @@ export default function EditableTable<T extends { id: string }>({
                         : '';
 
                     return (
-                      <td key={String(col.key)} className="px-3 py-2 space-y-1">
+                      <td key={String(col.key)} className="space-y-1 px-3 py-2">
                         <select
                           value={selectValue}
                           onChange={e => handleChange(row.id, col.key, e.target.value)}
                           className={cn(
-                            'text-xs font-medium px-2 py-1 rounded-md border-none focus:ring-1 focus:ring-primary cursor-pointer',
-                            colorClass || 'bg-secondary'
+                            'cursor-pointer rounded-md px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-primary',
+                            colorClass || 'border border-white/[0.08] bg-white/[0.05] text-white/70'
                           )}
                         >
                           <option value="">-</option>
@@ -185,8 +189,8 @@ export default function EditableTable<T extends { id: string }>({
                             onChange={e => handleChange(row.id, col.key, e.target.value)}
                             placeholder={col.customOptionPlaceholder || col.customOptionLabel}
                             className={cn(
-                              'w-full bg-background border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary',
-                              colorClass || 'border-border'
+                              'w-full rounded border bg-white/[0.07] px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary',
+                              colorClass || 'border-white/[0.08]'
                             )}
                           />
                         )}
@@ -198,7 +202,7 @@ export default function EditableTable<T extends { id: string }>({
                     return (
                       <td
                         key={String(col.key)}
-                        className="px-3 py-2 cursor-text align-top"
+                        className="cursor-text px-3 py-2 align-top"
                         onClick={() => setEditingCell({ rowId: row.id, key: String(col.key) })}
                       >
                         {isEditing ? (
@@ -207,10 +211,10 @@ export default function EditableTable<T extends { id: string }>({
                             value={val}
                             onChange={e => handleChange(row.id, col.key, e.target.value)}
                             onBlur={() => setEditingCell(null)}
-                            className="w-full min-h-24 bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-y"
+                            className="min-h-24 w-full resize-y rounded border border-primary bg-white/[0.07] px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary"
                           />
                         ) : (
-                          <span className="block max-w-[260px] whitespace-pre-wrap break-words">{val || 'â€”'}</span>
+                          <span className="block max-w-[260px] whitespace-pre-wrap break-words">{val || '—'}</span>
                         )}
                       </td>
                     );
@@ -219,7 +223,7 @@ export default function EditableTable<T extends { id: string }>({
                   return (
                     <td
                       key={String(col.key)}
-                      className="px-3 py-2 cursor-text"
+                      className="cursor-text px-3 py-2"
                       onClick={() => setEditingCell({ rowId: row.id, key: String(col.key) })}
                     >
                       {isEditing ? (
@@ -230,16 +234,16 @@ export default function EditableTable<T extends { id: string }>({
                           onChange={e => handleChange(row.id, col.key, e.target.value)}
                           onBlur={() => setEditingCell(null)}
                           onKeyDown={e => e.key === 'Enter' && setEditingCell(null)}
-                          className="w-full bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-full rounded border border-primary bg-white/[0.07] px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       ) : (
-                        <span className="block truncate max-w-[200px]">{val || '—'}</span>
+                        <span className="block max-w-[200px] truncate">{val || '—'}</span>
                       )}
                     </td>
                   );
                 })}
                 <td className="px-3 py-2">
-                  <button onClick={() => deleteRow(row.id)} className="text-destructive hover:text-destructive/80 transition-default" title="Supprimer">
+                  <button onClick={() => deleteRow(row.id)} className="text-destructive transition-default hover:text-destructive/80" title="Supprimer">
                     <Trash2 size={15} />
                   </button>
                 </td>
@@ -248,10 +252,7 @@ export default function EditableTable<T extends { id: string }>({
           </tbody>
         </table>
       </div>
-      <button
-        onClick={addRow}
-        className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-default"
-      >
+      <button onClick={addRow} className="action-button-primary">
         <Plus size={16} /> Ajouter une ligne
       </button>
     </div>
@@ -278,21 +279,21 @@ function PhotoCell<T>({ rowId, colKey, val, onAdd, onRemove }: {
 
   return (
     <td className="px-3 py-2">
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex flex-wrap items-center gap-1.5">
         {photos.map((src, i) => (
-          <div key={i} className="relative group w-10 h-10 rounded overflow-hidden border border-border">
-            <img src={src} alt="" className="w-full h-full object-cover" />
+          <div key={i} className="group relative h-10 w-10 overflow-hidden rounded border border-white/[0.08]">
+            <img src={src} alt="" className="h-full w-full object-cover" />
             <button
               onClick={() => onRemove(rowId, colKey, i)}
-              className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-default"
+              className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-default group-hover:opacity-100"
             >
-              <X size={12} className="text-background" />
+              <X size={12} className="text-white" />
             </button>
           </div>
         ))}
         <button
           onClick={() => inputRef.current?.click()}
-          className="w-10 h-10 rounded border border-dashed border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-default"
+          className="flex h-10 w-10 items-center justify-center rounded border border-dashed border-white/[0.14] text-muted-foreground transition-default hover:border-primary hover:text-primary"
           title="Ajouter une photo"
         >
           <ImagePlus size={16} />

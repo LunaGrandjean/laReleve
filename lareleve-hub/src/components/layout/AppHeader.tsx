@@ -39,20 +39,19 @@ export default function AppHeader({ title = 'LaRelève' }: HeaderProps) {
   return (
     <header className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
       <div className="pl-12 lg:pl-0">
-        <h1 className="text-lg font-bold tracking-wide text-white">{title}</h1>
-        <p className="hidden text-xs text-white/50 sm:block">Gestion interne, recherches, contacts et chantiers</p>
+        <h1 className="text-sm font-semibold uppercase tracking-[0.22em] text-white/70">{title}</h1>
       </div>
 
       <div className="flex items-center gap-2">
         <button
           onClick={handleExport}
-          className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.08] px-3 py-2 text-sm font-medium text-white hover:bg-white/[0.14] transition-default"
+          className="action-button py-1.5"
         >
           <Download size={16} /> Exporter
         </button>
         <button
           onClick={() => inputRef.current?.click()}
-          className="flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-white shadow-[0_8px_24px_rgba(255,102,0,0.26)] hover:bg-primary/90 transition-default"
+          className="action-button-primary py-1.5"
         >
           <Upload size={16} /> Importer
         </button>

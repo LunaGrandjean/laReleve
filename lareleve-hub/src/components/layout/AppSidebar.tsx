@@ -44,8 +44,8 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
         />
       )}
 
-      <header className="sticky top-0 z-40 hidden border-b border-white/10 bg-black/[0.55] px-6 py-3 shadow-[0_10px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl lg:block">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-6">
+      <header className="top-navbar">
+        <div className="top-navbar-inner">
           <button onClick={onLogoClick} className="flex items-center gap-3 text-left">
             <img src="/icon.jpg" alt="" className="h-10 w-10 rounded-md object-cover ring-1 ring-primary/40" />
             <div>
@@ -54,16 +54,14 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
             </div>
           </button>
 
-          <nav className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.06] p-1">
+          <nav className="flex items-center gap-2">
             {navItems.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => handleNav(id)}
                 className={cn(
-                  'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white/70 transition-default',
-                  activeTab === id
-                    ? 'bg-primary text-white shadow-[0_8px_24px_rgba(255,102,0,0.28)]'
-                  : 'hover:bg-white/10 hover:text-white'
+                  'nav-link',
+                  activeTab === id && 'nav-link-active'
                 )}
               >
                 <Icon size={17} />

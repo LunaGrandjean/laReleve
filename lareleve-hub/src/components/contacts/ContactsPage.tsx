@@ -32,16 +32,19 @@ export default function ContactsPage({
   setEntrepreneurContacts,
 }: ContactsPageProps) {
   return (
-    <div className="space-y-8 animate-fade-in">
-      <h1 className="text-2xl font-bold">Contacts</h1>
+    <div className="page-shell">
+      <div className="page-header">
+        <h1 className="page-title">Contacts</h1>
+        <p className="page-subtitle">Carnet d’adresses agences et entrepreneurs.</p>
+      </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Contacts agences</h2>
+        <h2 className="section-title">01 — Contacts agences</h2>
         <EditableTable columns={columns} rows={contacts} onUpdate={setContacts} createEmpty={createEmpty} />
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Contacts entrepreneurs</h2>
+        <h2 className="section-title">02 — Contacts entrepreneurs</h2>
         <EditableTable columns={columns} rows={entrepreneurContacts} onUpdate={setEntrepreneurContacts} createEmpty={createEmpty} />
       </section>
     </div>

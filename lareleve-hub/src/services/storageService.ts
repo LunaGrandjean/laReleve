@@ -6,10 +6,38 @@ const ROOT_FILES_STORAGE_KEY = 'lareleve_documents_root_files_v1';
 const CONSTRUCTION_STORAGE_KEY = 'lareleve_chantier_v1';
 
 const normalizeData = (data: Partial<AppData> | null | undefined): AppData => ({
-  members: data?.members || [],
+  members: (data?.members || []).map(member => ({
+    ...member,
+    recherches: (member.recherches || []).map(recherche => ({
+      ...recherche,
+      statut: normalizeStatus(recherche.statut),
+    })),
+    offres: (member.offres || []).map(offre => ({
+      ...offre,
+      statut: normalizeStatus(offre.statut) as typeof offre.statut,
+    })),
+    travaux: (member.travaux || []).map(travaux => ({
+      ...travaux,
+      statut: normalizeStatus(travaux.statut) as typeof travaux.statut,
+    })),
+  })),
   contacts: data?.contacts || [],
   entrepreneurContacts: data?.entrepreneurContacts || [],
 });
+
+const normalizeStatus = (value: string) => {
+  const replacements: Record<string, string> = {
+    ['Accept\u00c3\u00a9e']: 'Acceptée',
+    ['Refus\u00c3\u00a9e']: 'Refusée',
+    ['R\u00c3\u00a9alis\u00c3\u00a9']: 'Réalisé',
+    ['\u00c3\u20ac appeler']: 'À appeler',
+    ['Propos\u00c3\u00a9']: 'Proposé',
+    ['\u00c3\u20ac \u00c3\u00a9tudier']: 'À étudier',
+    ['Visit\u00c3\u00a9']: 'Visité',
+  };
+
+  return replacements[value] || value;
+};
 
 const readJson = (key: string) => {
   const raw = localStorage.getItem(key);

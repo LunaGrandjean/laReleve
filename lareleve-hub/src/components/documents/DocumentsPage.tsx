@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Folder, FolderPlus, FileUp, FileText, Trash2, ArrowLeft, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, FileText, FileUp, Folder, FolderPlus, Plus, Trash2 } from 'lucide-react';
 
 interface StoredFile {
   name: string;
-  data: string; // base64
+  data: string;
   type: string;
   addedAt: string;
 }
@@ -57,7 +57,7 @@ function saveDocuments(docs: FolderStructure) {
 
 export default function DocumentsPage() {
   const [structure, setStructure] = useState<FolderStructure>(loadDocuments);
-  const [path, setPath] = useState<string[]>([]); // breadcrumb path
+  const [path, setPath] = useState<string[]>([]);
   const [showAddFolder, setShowAddFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
 
@@ -65,7 +65,6 @@ export default function DocumentsPage() {
     saveDocuments(structure);
   }, [structure]);
 
-  // Navigate to current node
   const getCurrentNode = (): { subfolders: FolderNode[]; files: StoredFile[]; parent: 'root' | FolderNode } => {
     if (path.length === 0) {
       return {
@@ -117,7 +116,6 @@ export default function DocumentsPage() {
     const name = newFolderName.trim();
 
     if (path.length === 0) {
-      // Add top-level folder
       setStructure(prev => ({
         ...prev,
         [name.toLowerCase()]: { name, subfolders: [], files: [] },
@@ -184,24 +182,21 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="page-shell">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
           {path.length > 0 && (
-            <button
-              onClick={() => setPath(prev => prev.slice(0, -1))}
-              className="p-2 rounded-md hover:bg-secondary transition-default"
-            >
+            <button onClick={() => setPath(prev => prev.slice(0, -1))} className="action-button p-2" aria-label="Retour">
               <ArrowLeft size={20} />
             </button>
           )}
-          <h1 className="text-2xl font-bold text-foreground">
-            {path.length === 0 ? 'Documents' : path[path.length - 1]}
-          </h1>
+          <div className="page-header">
+            <h1 className="page-title">{path.length === 0 ? 'Documents' : path[path.length - 1]}</h1>
+            <p className="page-subtitle">Classement des offres, pièces et documents de travail.</p>
+          </div>
         </div>
       </div>
 
-      {/* Breadcrumb */}
       {path.length > 0 && (
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <button onClick={() => setPath([])} className="hover:text-primary transition-default">Documents</button>
@@ -210,7 +205,7 @@ export default function DocumentsPage() {
               <span>/</span>
               <button
                 onClick={() => setPath(path.slice(0, i + 1))}
-                className={i === path.length - 1 ? 'text-foreground font-medium' : 'hover:text-primary transition-default'}
+                className={i === path.length - 1 ? 'font-medium text-white' : 'hover:text-primary transition-default'}
               >
                 {p}
               </button>
@@ -219,16 +214,12 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <button
-          onClick={() => setShowAddFolder(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-default"
-        >
+      <div className="flex flex-wrap items-center gap-3">
+        <button onClick={() => setShowAddFolder(true)} className="action-button-primary">
           <FolderPlus size={16} /> Nouveau dossier
         </button>
         {path.length > 0 && (
-          <label className="flex items-center gap-2 px-4 py-2 bg-noir text-primary-foreground rounded-lg text-sm font-medium hover:bg-noir-light transition-default cursor-pointer">
+          <label className="action-button cursor-pointer">
             <FileUp size={16} /> Ajouter un fichier
             <input
               type="file"
@@ -241,44 +232,42 @@ export default function DocumentsPage() {
         )}
       </div>
 
-      {/* Add folder dialog */}
       {showAddFolder && (
-        <div className="flex items-center gap-2 bg-card border border-border rounded-lg p-3">
+        <div className="premium-card flex items-center gap-2 p-3">
           <input
             autoFocus
             value={newFolderName}
             onChange={e => setNewFolderName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addSubfolder()}
             placeholder="Nom du dossier..."
-            className="flex-1 bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            className="flex-1 rounded border border-white/[0.08] bg-white/[0.05] px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-primary"
           />
-          <button onClick={addSubfolder} className="px-3 py-2 bg-primary text-primary-foreground rounded text-sm font-medium">
-            Créer
+          <button onClick={addSubfolder} className="action-button-primary">
+            <Plus size={14} /> Créer
           </button>
-          <button onClick={() => { setShowAddFolder(false); setNewFolderName(''); }} className="px-3 py-2 bg-secondary rounded text-sm">
+          <button onClick={() => { setShowAddFolder(false); setNewFolderName(''); }} className="action-button">
             Annuler
           </button>
         </div>
       )}
 
-      {/* Content grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {currentView.subfolders.map(folder => (
           <div
             key={folder.name}
-            className="group relative bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:border-primary hover:shadow-md transition-default cursor-pointer"
+            className="premium-card group relative flex cursor-pointer flex-col items-center gap-2 p-4"
             onClick={() => setPath([...path, folder.name])}
           >
             <Folder size={36} className="text-primary" />
-            <span className="text-sm font-medium text-center leading-tight">{folder.name}</span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-center text-sm font-medium leading-tight text-white">{folder.name}</span>
+            <span className="text-center text-xs text-muted-foreground">
               {folder.subfolders.length > 0 ? `${folder.subfolders.length} dossiers` : ''}
               {folder.subfolders.length > 0 && folder.files.length > 0 ? ' · ' : ''}
               {folder.files.length > 0 ? `${folder.files.length} fichiers` : ''}
             </span>
             <button
               onClick={e => { e.stopPropagation(); removeSubfolder(folder.name); }}
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/80 transition-default"
+              className="absolute right-2 top-2 text-destructive opacity-0 transition-default hover:text-destructive/80 group-hover:opacity-100"
               title="Supprimer le dossier"
             >
               <Trash2 size={14} />
@@ -289,17 +278,17 @@ export default function DocumentsPage() {
         {currentView.files.map(file => (
           <div
             key={file.name + file.addedAt}
-            className="group relative bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:border-primary hover:shadow-md transition-default cursor-pointer"
+            className="premium-card group relative flex cursor-pointer flex-col items-center gap-2 p-4"
             onClick={() => openFile(file)}
           >
             <FileText size={36} className="text-muted-foreground" />
-            <span className="text-sm font-medium text-center leading-tight truncate max-w-full">{file.name}</span>
+            <span className="max-w-full truncate text-center text-sm font-medium leading-tight text-white">{file.name}</span>
             <span className="text-xs text-muted-foreground">
               {new Date(file.addedAt).toLocaleDateString('fr-FR')}
             </span>
             <button
               onClick={e => { e.stopPropagation(); removeFile(file.name); }}
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/80 transition-default"
+              className="absolute right-2 top-2 text-destructive opacity-0 transition-default hover:text-destructive/80 group-hover:opacity-100"
               title="Supprimer le fichier"
             >
               <Trash2 size={14} />
@@ -309,7 +298,7 @@ export default function DocumentsPage() {
       </div>
 
       {currentView.subfolders.length === 0 && currentView.files.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="py-12 text-center text-muted-foreground">
           <Folder size={48} className="mx-auto mb-3 opacity-30" />
           <p>Ce dossier est vide</p>
         </div>

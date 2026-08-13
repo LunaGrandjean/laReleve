@@ -6,38 +6,38 @@
 
 @layer base {
   :root {
-    --background: 24 18% 8%;
-    --foreground: 0 0% 6%;
+    --background: 0 0% 3%;
+    --foreground: 0 0% 96%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 6%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 6%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 96%;
 
     --primary: 25 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 28 24% 95%;
-    --secondary-foreground: 0 0% 6%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 28 24% 95%;
-    --muted-foreground: 222 10% 42%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 66%;
 
-    --accent: 25 100% 95%;
-    --accent-foreground: 25 100% 40%;
+    --accent: 25 100% 10%;
+    --accent-foreground: 25 100% 62%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 142 57% 48%;
     --success-foreground: 0 0% 100%;
 
     --warning: 25 100% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 24 16% 86%;
-    --input: 24 16% 86%;
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
     --ring: 25 100% 50%;
 
     --radius: 0.5rem;
@@ -98,11 +98,180 @@
   textarea {
     color: hsl(var(--foreground));
   }
+
+  ::selection {
+    background: rgb(255 101 0 / 0.35);
+  }
+}
+
+@layer components {
+  .app-shell {
+    @apply relative isolate min-h-screen overflow-x-hidden bg-background text-foreground;
+  }
+
+  .app-bg {
+    @apply fixed inset-0 z-0 bg-[url('/fond.png')] bg-cover bg-center bg-no-repeat;
+  }
+
+  .app-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 22% 18%, rgb(255 101 0 / 0.10), transparent 32%),
+      linear-gradient(180deg, rgb(0 0 0 / 0.34), rgb(0 0 0 / 0.58));
+  }
+
+  .app-layer {
+    @apply relative z-10;
+  }
+
+  .app-main {
+    @apply mx-auto w-full max-w-[1500px] flex-1 px-4 pb-10 sm:px-6 lg:px-8;
+  }
+
+  .top-navbar {
+    @apply sticky top-0 z-40 hidden px-6 py-3 backdrop-blur-xl lg:block;
+    background: rgb(0 0 0 / 0.42);
+    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  .top-navbar-inner {
+    @apply mx-auto flex max-w-[1500px] items-center justify-between gap-8;
+  }
+
+  .nav-link {
+    @apply relative flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white/60 transition-default;
+  }
+
+  .nav-link:hover {
+    @apply text-white;
+    background: rgb(255 101 0 / 0.08);
+    box-shadow: 0 0 28px rgb(255 101 0 / 0.08);
+  }
+
+  .nav-link-active {
+    @apply text-white;
+    background: rgb(255 101 0 / 0.10);
+  }
+
+  .nav-link-active::after {
+    content: "";
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 4px;
+    height: 1px;
+    background: rgb(255 101 0 / 0.95);
+  }
+
+  .page-shell {
+    @apply space-y-8 animate-fade-in;
+  }
+
+  .page-header {
+    @apply space-y-1;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold tracking-wide text-white sm:text-3xl;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-white/50;
+  }
+
+  .section-title {
+    @apply flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/60;
+  }
+
+  .section-title::before {
+    content: "";
+    width: 28px;
+    height: 1px;
+    background: rgb(255 101 0 / 0.95);
+  }
+
+  .glass-panel {
+    background: rgb(12 12 12 / 0.72);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 70px rgb(0 0 0 / 0.30);
+  }
+
+  .premium-card,
+  .stat-card {
+    background: rgb(18 18 18 / 0.78);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 14px 44px rgb(0 0 0 / 0.22);
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+
+  .premium-card:hover,
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: rgb(255 101 0 / 0.35);
+    box-shadow: 0 18px 54px rgb(0 0 0 / 0.28), 0 0 28px rgb(255 101 0 / 0.07);
+  }
+
+  .stat-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.22em] text-white/50;
+  }
+
+  .stat-value {
+    @apply mt-2 text-3xl font-semibold tracking-wide text-white;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-white/70;
+    background: rgb(255 255 255 / 0.05);
+    border: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  .status-badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .action-button {
+    @apply inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white/75 transition-default;
+    background: rgb(255 255 255 / 0.06);
+    border: 1px solid rgb(255 255 255 / 0.10);
+  }
+
+  .action-button:hover {
+    @apply border-primary/40 text-white;
+    background: rgb(255 101 0 / 0.08);
+    box-shadow: 0 0 24px rgb(255 101 0 / 0.08);
+  }
+
+  .action-button-primary {
+    @apply inline-flex items-center gap-2 rounded-md border border-primary/40 px-3 py-2 text-sm font-medium text-white transition-default;
+    background: rgb(255 101 0 / 0.16);
+  }
+
+  .action-button-primary:hover {
+    background: rgb(255 101 0 / 0.24);
+    box-shadow: 0 0 28px rgb(255 101 0 / 0.18);
+  }
+
+  .table-shell {
+    @apply max-w-full overflow-x-auto rounded-lg;
+    background: rgb(12 12 12 / 0.64);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    backdrop-filter: blur(12px);
+  }
 }
 
 @layer utilities {
   .transition-default {
-    transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .shadow-card {
@@ -111,5 +280,30 @@
 
   .shadow-elevated {
     box-shadow: 0 16px 44px rgb(25 20 16 / 0.14);
+  }
+
+  .bg-card {
+    background-color: rgb(18 18 18 / 0.78) !important;
+    backdrop-filter: blur(12px);
+  }
+
+  .bg-secondary {
+    background-color: rgb(255 255 255 / 0.05) !important;
+  }
+
+  .bg-background {
+    background-color: rgb(8 8 8 / 0.72) !important;
+  }
+
+  .border-border {
+    border-color: rgb(255 255 255 / 0.08) !important;
+  }
+
+  .text-foreground {
+    color: rgb(245 245 245) !important;
+  }
+
+  .text-muted-foreground {
+    color: rgb(245 245 245 / 0.56) !important;
   }
 }

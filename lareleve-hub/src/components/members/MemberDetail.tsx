@@ -1,4 +1,4 @@
-import { Member, Recherche, Offre } from '@/types';
+import { Member, Offre, Recherche } from '@/types';
 import { ArrowLeft } from 'lucide-react';
 import EditableTable, { ColumnDef } from '../shared/EditableTable';
 
@@ -32,26 +32,24 @@ const offreColumns: ColumnDef<Offre>[] = [
   { key: 'prixPropose', label: 'Prix proposé', width: '110px' },
   { key: 'prixAchete', label: 'Prix acheté', width: '110px' },
   { key: 'date', label: 'Date', width: '100px' },
-  { key: 'commentaire', label: 'Commentaire', width: '160px' },
+  { key: 'commentaire', label: 'Commentaire', type: 'textarea', width: '180px' },
   { key: 'agence', label: 'Agence', width: '120px' },
   { key: 'photos', label: 'Photos', type: 'photos', width: '180px' },
 ];
 
-
 const offreStatusColors: Record<string, string> = {
-  'Acceptée': 'bg-success/20 text-success',
-  'En attente': 'bg-primary/20 text-primary',
-  'Refusée': 'bg-destructive/20 text-destructive',
+  Acceptée: 'bg-success/15 text-success border border-success/20',
+  'En attente': 'bg-primary/15 text-primary border border-primary/20',
+  Refusée: 'bg-destructive/15 text-destructive border border-destructive/20',
 };
 
-
 const rechercheStatusColors: Record<string, string> = {
-  'À appeler': 'bg-red-100 text-red-700',
-  'Proposé': 'bg-orange-100 text-orange-700',
-  'À étudier': 'bg-blue-100 text-blue-700',
-  'MSS vocal': 'bg-black text-white',
-  'Visité': 'bg-green-100 text-green-700',
-  Autre: 'bg-violet-100 text-violet-700',
+  'À appeler': 'bg-red-500/15 text-red-300 border border-red-500/20',
+  Proposé: 'bg-primary/15 text-primary border border-primary/20',
+  'À étudier': 'bg-blue-500/15 text-blue-300 border border-blue-500/20',
+  'MSS vocal': 'bg-white/[0.08] text-white border border-white/[0.12]',
+  Visité: 'bg-success/15 text-success border border-success/20',
+  Autre: 'bg-violet-500/15 text-violet-300 border border-violet-500/20',
 };
 
 export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailProps) {
@@ -95,28 +93,29 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="page-shell">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="p-2 rounded-md hover:bg-secondary transition-default">
+        <button onClick={onBack} className="action-button p-2" aria-label="Retour">
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-2xl font-bold">{member.name}</h1>
+        <div className="page-header">
+          <h1 className="page-title">{member.name}</h1>
+          <p className="page-subtitle">Suivi des recherches et offres du membre.</p>
+        </div>
       </div>
 
-      {/* Notes */}
-      <div className="bg-noir rounded-lg p-5">
-        <h2 className="text-primary-foreground font-semibold mb-3">Notes — {member.name}</h2>
+      <div className="premium-card p-5">
+        <h2 className="mb-3 font-semibold text-white">Notes — {member.name}</h2>
         <textarea
           value={member.notes}
           onChange={e => update({ notes: e.target.value })}
           placeholder="Écrire des notes pour ce membre..."
-          className="w-full bg-noir-light border-none rounded-md p-3 text-sm text-primary-foreground h-32 focus:ring-1 focus:ring-primary focus:outline-none resize-none placeholder:text-muted-foreground"
+          className="h-32 w-full resize-none rounded-md border border-white/[0.08] bg-white/[0.05] p-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
 
-      {/* Recherches */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Recherches</h2>
+        <h2 className="section-title">01 — Recherches</h2>
         <EditableTable
           columns={rechercheColumns}
           rows={member.recherches}
@@ -126,9 +125,8 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
         />
       </section>
 
-      {/* Offres */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Offres</h2>
+        <h2 className="section-title">02 — Offres</h2>
         <EditableTable
           columns={offreColumns}
           rows={member.offres}
