@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, FileArchive, FileText, FileUp, Folder, FolderPlus, Plus, Trash2 } from 'lucide-react';
+import { storageService } from '@/services/storageService';
 
 interface StoredFile {
   name: string;
@@ -17,8 +18,6 @@ interface FolderNode {
 interface FolderStructure {
   [key: string]: FolderNode;
 }
-
-const STORAGE_KEY = 'lareleve_documents_v1';
 
 const defaultStructure = (): FolderStructure => ({
   paris: {
@@ -42,18 +41,6 @@ const defaultStructure = (): FolderStructure => ({
     files: [],
   },
 });
-
-function loadDocuments(): FolderStructure {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return defaultStructure();
-}
-
-function saveDocuments(docs: FolderStructure) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
-}
 
 function emptyFolder(name: string): FolderNode {
   return { name, subfolders: [], files: [] };
@@ -143,14 +130,26 @@ async function filesToFolder(files: FileList): Promise<FolderNode | null> {
 }
 
 export default function DocumentsPage() {
-  const [structure, setStructure] = useState<FolderStructure>(loadDocuments);
+  const [structure, setStructure] = useState<FolderStructure>(defaultStructure);
   const [path, setPath] = useState<string[]>([]);
   const [showAddFolder, setShowAddFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [hydrated, setHydrated] = useState(false);
+  const [storageError, setStorageError] = useState('');
 
   useEffect(() => {
-    saveDocuments(structure);
-  }, [structure]);
+    storageService.loadDocuments<FolderStructure>().then(documents => {
+      if (documents) setStructure(documents);
+      setHydrated(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    storageService.saveDocuments(structure).catch(() => {
+      setStorageError("Le navigateur n'a pas pu enregistrer tous les fichiers. Essaie d'importer un dossier moins lourd ou de libérer du stockage navigateur.");
+    });
+  }, [hydrated, structure]);
 
   const getCurrentNode = (): { subfolders: FolderNode[]; files: StoredFile[]; parent: 'root' | FolderNode } => {
     if (path.length === 0) {
@@ -367,6 +366,12 @@ export default function DocumentsPage() {
           </label>
         )}
       </div>
+
+      {storageError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-red-200">
+          {storageError}
+        </div>
+      )}
 
       {showAddFolder && (
         <div className="premium-card flex items-center gap-2 p-3">

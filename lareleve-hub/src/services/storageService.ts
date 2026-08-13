@@ -4,6 +4,9 @@ const STORAGE_KEY = 'lareleve_data_v1';
 const DOCUMENTS_STORAGE_KEY = 'lareleve_documents_v1';
 const ROOT_FILES_STORAGE_KEY = 'lareleve_documents_root_files_v1';
 const CONSTRUCTION_STORAGE_KEY = 'lareleve_chantier_v1';
+const DB_NAME = 'lareleve_hub_db';
+const DB_STORE = 'keyval';
+const DB_VERSION = 1;
 
 const normalizeData = (data: Partial<AppData> | null | undefined): AppData => ({
   members: (data?.members || []).map(member => ({
@@ -44,6 +47,71 @@ const readJson = (key: string) => {
   return raw ? JSON.parse(raw) : null;
 };
 
+const openDb = () => new Promise<IDBDatabase>((resolve, reject) => {
+  if (!('indexedDB' in window)) {
+    reject(new Error('IndexedDB indisponible'));
+    return;
+  }
+
+  const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+  request.onupgradeneeded = () => {
+    const db = request.result;
+    if (!db.objectStoreNames.contains(DB_STORE)) {
+      db.createObjectStore(DB_STORE);
+    }
+  };
+
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+
+const idbGet = async <T>(key: string): Promise<T | null> => {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const request = tx.objectStore(DB_STORE).get(key);
+    request.onsuccess = () => resolve((request.result as T) || null);
+    request.onerror = () => reject(request.error);
+    tx.oncomplete = () => db.close();
+    tx.onerror = () => db.close();
+  });
+};
+
+const idbSet = async (key: string, value: unknown): Promise<void> => {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    const request = tx.objectStore(DB_STORE).put(value, key);
+    request.onerror = () => reject(request.error);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+};
+
+const idbDelete = async (key: string): Promise<void> => {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    const request = tx.objectStore(DB_STORE).delete(key);
+    request.onerror = () => reject(request.error);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+};
+
 export const storageService = {
   save: (data: AppData): void => {
     try {
@@ -63,15 +131,39 @@ export const storageService = {
     }
     return normalizeData(null);
   },
-  exportAll: () => ({
-    version: 2,
+  loadDocuments: async <T>(): Promise<T | null> => {
+    try {
+      const idbDocuments = await idbGet<T>(DOCUMENTS_STORAGE_KEY);
+      if (idbDocuments) return idbDocuments;
+    } catch (e) {
+      console.error('Failed to load documents from IndexedDB:', e);
+    }
+
+    try {
+      return readJson(DOCUMENTS_STORAGE_KEY) as T | null;
+    } catch (e) {
+      console.error('Failed to load documents from localStorage:', e);
+      return null;
+    }
+  },
+  saveDocuments: async (documents: unknown): Promise<void> => {
+    try {
+      await idbSet(DOCUMENTS_STORAGE_KEY, documents);
+      try { localStorage.removeItem(DOCUMENTS_STORAGE_KEY); } catch {}
+    } catch (e) {
+      console.error('Failed to save documents:', e);
+      throw e;
+    }
+  },
+  exportAll: async () => ({
+    version: 3,
     exportedAt: new Date().toISOString(),
     appData: storageService.load(),
-    documents: readJson(DOCUMENTS_STORAGE_KEY),
+    documents: await storageService.loadDocuments(),
     rootFiles: readJson(ROOT_FILES_STORAGE_KEY),
     construction: readJson(CONSTRUCTION_STORAGE_KEY),
   }),
-  importAll: (backup: unknown): void => {
+  importAll: async (backup: unknown): Promise<void> => {
     const data = backup as {
       appData?: Partial<AppData>;
       documents?: unknown;
@@ -85,8 +177,8 @@ export const storageService = {
     storageService.save(normalizeData(data.appData || data));
 
     if ('documents' in data) {
-      if (data.documents) localStorage.setItem(DOCUMENTS_STORAGE_KEY, JSON.stringify(data.documents));
-      else localStorage.removeItem(DOCUMENTS_STORAGE_KEY);
+      if (data.documents) await storageService.saveDocuments(data.documents);
+      else await idbDelete(DOCUMENTS_STORAGE_KEY);
     }
 
     if ('rootFiles' in data) {

@@ -9,8 +9,8 @@ interface HeaderProps {
 export default function AppHeader({ title = 'LaRelève' }: HeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = () => {
-    const backup = storageService.exportAll();
+  const handleExport = async () => {
+    const backup = await storageService.exportAll();
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -24,9 +24,9 @@ export default function AppHeader({ title = 'LaRelève' }: HeaderProps) {
   const handleImport = (file: File) => {
     const reader = new FileReader();
 
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
-        storageService.importAll(JSON.parse(String(reader.result)));
+        await storageService.importAll(JSON.parse(String(reader.result)));
         window.location.reload();
       } catch {
         alert("Impossible d'importer ce fichier. Vérifie que c'est bien une sauvegarde LaRelève.");
