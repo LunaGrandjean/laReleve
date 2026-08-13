@@ -65,12 +65,18 @@ export default function Index() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <AppSidebar activeTab={activeTab} setActiveTab={(t) => { setActiveTab(t as Tab); setSelectedMemberId(null); }} onLogoClick={handleLogoClick} />
-      <div className="flex-1 flex flex-col lg:ml-0">
+    <div className="relative isolate min-h-screen bg-background text-foreground">
+      <div className="fixed inset-0 z-0 bg-[url('/fond.png')] bg-cover bg-center bg-no-repeat" />
+      <div className="fixed inset-0 z-0 bg-black/[0.35]" />
+      <div className="relative z-10">
+        <AppSidebar activeTab={activeTab} setActiveTab={(t) => { setActiveTab(t as Tab); setSelectedMemberId(null); }} onLogoClick={handleLogoClick} />
+      </div>
+      <div className="relative z-10 flex min-h-screen flex-col">
         <AppHeader />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          {renderContent()}
+        <main className="mx-auto w-full max-w-[1500px] flex-1 px-4 pb-8 sm:px-6 lg:px-8">
+          <div className="rounded-lg border border-white/10 bg-white/[0.86] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.32)] backdrop-blur-md sm:p-6 lg:p-7">
+            {renderContent()}
+          </div>
         </main>
       </div>
     </div>

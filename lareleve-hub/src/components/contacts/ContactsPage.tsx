@@ -13,7 +13,7 @@ const columns: ColumnDef<Contact>[] = [
   { key: 'telephone', label: 'Numéro', width: '130px' },
   { key: 'email', label: 'Mail', width: '180px' },
   { key: 'source', label: 'Sources', width: '120px' },
-  { key: 'commentaire', label: 'Commentaires', width: '200px' },
+  { key: 'commentaire', label: 'Commentaires', type: 'textarea', width: '240px' },
 ];
 
 const createEmpty = (): Contact => ({
@@ -36,7 +36,7 @@ export default function ContactsPage({
       <h1 className="text-2xl font-bold">Contacts</h1>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Contacts membres</h2>
+        <h2 className="text-lg font-semibold">Contacts agences</h2>
         <EditableTable columns={columns} rows={contacts} onUpdate={setContacts} createEmpty={createEmpty} />
       </section>
 

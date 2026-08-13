@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 24 18% 8%;
     --foreground: 0 0% 6%;
 
     --card: 0 0% 100%;
@@ -18,11 +18,11 @@
     --primary: 25 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 9% 94%;
+    --secondary: 28 24% 95%;
     --secondary-foreground: 0 0% 6%;
 
-    --muted: 220 9% 94%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 28 24% 95%;
+    --muted-foreground: 222 10% 42%;
 
     --accent: 25 100% 95%;
     --accent-foreground: 25 100% 40%;
@@ -36,8 +36,8 @@
     --warning: 25 100% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 24 16% 86%;
+    --input: 24 16% 86%;
     --ring: 25 100% 50%;
 
     --radius: 0.5rem;
@@ -86,11 +86,30 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+
+  html {
+    background: hsl(var(--background));
+  }
+
+  input,
+  select,
+  textarea {
+    color: hsl(var(--foreground));
   }
 }
 
 @layer utilities {
   .transition-default {
     transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .shadow-card {
+    box-shadow: 0 8px 24px rgb(25 20 16 / 0.08);
+  }
+
+  .shadow-elevated {
+    box-shadow: 0 16px 44px rgb(25 20 16 / 0.14);
   }
 }

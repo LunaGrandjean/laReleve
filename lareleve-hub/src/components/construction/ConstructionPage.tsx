@@ -28,6 +28,7 @@ interface ChantierTask {
   dateFinReelle: string;
   dureePrevue: string;
   avancement: string;
+  statut: string;
   responsable: string;
   observations: string;
 }
@@ -83,6 +84,8 @@ const lots = [
   'Finitions / Nettoyage',
 ];
 
+const taskStatuses = ['À venir', 'En cours', 'En retard', 'Terminé'];
+
 const defaultPieces = (): ChantierPiece[] => defaultPieceNames.map(name => ({
   id: crypto.randomUUID?.() || `${Date.now()}-${name}`,
   name,
@@ -101,6 +104,7 @@ function emptyTask(id: string, piece: string): ChantierTask {
     dateFinReelle: '',
     dureePrevue: '',
     avancement: '0',
+    statut: 'À venir',
     responsable: '',
     observations: '',
   };
@@ -131,7 +135,10 @@ function createProject(meta: Partial<ConstructionMeta>): ConstructionProject {
 
 function normalizeProject(project: Partial<ConstructionProject> & { reserves?: unknown }): ConstructionProject {
   const fallback = initialData();
-  const tasks = project.tasks || [];
+  const tasks = (project.tasks || []).map(task => ({
+    ...task,
+    statut: task.statut || getTaskStatus(task),
+  }));
   const pieces = normalizePieces(project.pieces, tasks);
 
   return {
@@ -587,7 +594,6 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
           <tbody className="divide-y divide-border">
             {tasks.map((t, i) => {
               const delay = getDelay(t);
-              const status = getTaskStatus(t);
               return (
                 <tr key={t.id} className="hover:bg-secondary/30 transition-default">
                   <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
@@ -601,7 +607,9 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
                   <td className="px-3 py-2"><Input type="number" value={t.dureePrevue} onChange={v => onUpdate(t.id, 'dureePrevue', v)} className="w-20" /></td>
                   <td className="px-3 py-2"><ProgressInput value={t.avancement} onChange={v => onUpdate(t.id, 'avancement', v)} /></td>
                   <td className="px-3 py-2 font-medium">{delay}</td>
-                  <td className="px-3 py-2"><StatusBadge status={status} /></td>
+                  <td className="px-3 py-2">
+                    <StatusSelect value={t.statut || getTaskStatus(t)} onChange={v => onUpdate(t.id, 'statut', v)} />
+                  </td>
                   <td className="px-3 py-2"><Input value={t.responsable} onChange={v => onUpdate(t.id, 'responsable', v)} /></td>
                   <td className="px-3 py-2"><Textarea value={t.observations} onChange={v => onUpdate(t.id, 'observations', v)} /></td>
                   <td className="px-3 py-2">
@@ -795,17 +803,25 @@ function ProgressInput({ value, onChange }: { value: string; onChange: (value: s
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const className =
-    status === 'Terminé'
+    value === 'Terminé'
       ? 'bg-green-100 text-green-700'
-      : status === 'En cours'
+      : value === 'En cours'
         ? 'bg-blue-100 text-blue-700'
-        : status === 'En retard'
+        : value === 'En retard'
           ? 'bg-red-100 text-red-700'
           : 'bg-orange-100 text-orange-700';
 
-  return <span className={cn('inline-flex rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap', className)}>{status || '-'}</span>;
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className={cn('w-28 rounded-md border border-transparent px-2 py-1 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary', className)}
+    >
+      {taskStatuses.map(status => <option key={status} value={status}>{status}</option>)}
+    </select>
+  );
 }
 
 function syncBudgets(tasks: ChantierTask[], budgets: BudgetRow[]) {
