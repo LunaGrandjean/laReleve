@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, DoorOpen, FileText, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type ConstructionView = 'chantier' | 'budget' | 'reserves' | 'legende';
+type ConstructionView = 'chantier' | 'budget' | 'commentaires';
 
 interface ConstructionMeta {
   operation: string;
   maitreOuvrage: string;
   maitreOeuvre: string;
   updatedAt: string;
+}
+
+interface ChantierPiece {
+  id: string;
+  name: string;
 }
 
 interface ChantierTask {
@@ -36,22 +41,12 @@ interface BudgetRow {
   observations: string;
 }
 
-interface ReserveRow {
-  id: string;
-  dateConstat: string;
-  piece: string;
-  lot: string;
-  description: string;
-  entreprise: string;
-  dateLimite: string;
-  dateLevee: string;
-}
-
 interface ConstructionData {
   meta: ConstructionMeta;
+  pieces: ChantierPiece[];
   tasks: ChantierTask[];
   budgets: BudgetRow[];
-  reserves: ReserveRow[];
+  globalNotes: string;
 }
 
 interface ConstructionProject extends ConstructionData {
@@ -61,7 +56,7 @@ interface ConstructionProject extends ConstructionData {
 
 const STORAGE_KEY = 'lareleve_chantier_v1';
 
-const pieces = [
+const defaultPieceNames = [
   'Entrée / Couloir',
   'Cuisine',
   'Salle de bain',
@@ -88,45 +83,25 @@ const lots = [
   'Finitions / Nettoyage',
 ];
 
-const seedTasks: ChantierTask[] = [
-  task('1', 'Entrée / Couloir', 'Démolition', 'Entreprise Dupont TP', 'Dépose revêtements sol et cloison existante', '2026-02-02', '2026-02-06', '2026-02-02', '2026-02-06', '5', '100'),
-  task('2', 'Cuisine', 'Plomberie', 'Thermo Confort', 'Dépose et réseau plomberie évier / lave-vaisselle', '2026-02-09', '2026-02-13', '2026-02-09', '2026-02-14', '5', '100'),
-  task('3', 'Cuisine', 'Électricité', 'Élec Services', 'Câblage prises, éclairage, hotte', '2026-02-16', '2026-02-20', '2026-02-17', '', '5', '70'),
-  task('4', 'Cuisine', 'Revêtements', 'Carrelage Design', 'Carrelage sol et crédence', '2026-02-23', '2026-02-27', '', '', '5', '0'),
-  task('5', 'Cuisine', 'Menuiserie / Agencement', 'Cuisines Leblanc', 'Pose meubles de cuisine et plan de travail', '2026-03-02', '2026-03-06', '', '', '5', '0'),
-  task('6', 'Salle de bain', 'Plomberie', 'Thermo Confort', 'Réseau eau, évacuation, receveur douche', '2026-02-09', '2026-02-16', '2026-02-10', '', '6', '50'),
-  task('7', 'Salle de bain', 'Électricité', 'Élec Services', 'Câblage éclairage et VMC', '2026-02-16', '2026-02-19', '', '', '4', '0'),
-  task('8', 'Salle de bain', 'Revêtements', 'Carrelage Design', 'Étanchéité, faïence et carrelage sol', '2026-02-23', '2026-03-02', '', '', '6', '0'),
-  task('9', 'Salle de bain', 'Menuiserie / Agencement', 'Bains Concept', 'Pose meuble vasque, miroir, accessoires', '2026-03-04', '2026-03-09', '', '', '4', '0'),
-  task('10', 'WC', 'Plomberie', 'Thermo Confort', 'Pose bâti-support et raccordements', '2026-02-11', '2026-02-12', '2026-02-11', '2026-02-12', '2', '100'),
-  task('11', 'WC', 'Revêtements', 'Carrelage Design', 'Carrelage sol et peinture murs', '2026-02-25', '2026-02-26', '', '', '2', '0'),
-  task('12', 'Séjour / Salon', 'Cloisons / Doublages', 'Plâtrerie Leroy', 'Reprises murs, doublages et faux plafond', '2026-02-16', '2026-02-20', '2026-02-16', '2026-02-21', '5', '100'),
-  task('13', 'Séjour / Salon', 'Électricité', 'Élec Services', 'Prises, éclairage et tableau', '2026-02-23', '2026-02-27', '', '', '5', '0'),
-  task('14', 'Séjour / Salon', 'Revêtements sols', 'Parquets Roy', 'Ragréage et pose parquet', '2026-03-09', '2026-03-13', '', '', '5', '0'),
-  task('15', 'Séjour / Salon', 'Peinture', 'Multi-services Pro', 'Préparation et peinture murs/plafond', '2026-03-16', '2026-03-20', '', '', '5', '0'),
-  task('16', 'Chambre 1', 'Électricité', 'Élec Services', 'Ajout prises et éclairage', '2026-02-23', '2026-02-25', '', '', '3', '0'),
-  task('17', 'Chambre 1', 'Revêtements sols', 'Parquets Roy', 'Pose parquet', '2026-03-09', '2026-03-11', '', '', '3', '0'),
-  task('18', 'Chambre 1', 'Peinture', 'Multi-services Pro', 'Peinture murs et plafond', '2026-03-16', '2026-03-18', '', '', '3', '0'),
-  task('19', 'Chambre 2', 'Électricité', 'Élec Services', 'Ajout prises et éclairage', '2026-02-25', '2026-02-27', '', '', '3', '0'),
-  task('20', 'Chambre 2', 'Revêtements sols', 'Parquets Roy', 'Pose parquet', '2026-03-11', '2026-03-13', '', '', '3', '0'),
-  task('21', 'Chambre 2', 'Peinture', 'Multi-services Pro', 'Peinture murs et plafond', '2026-03-18', '2026-03-20', '', '', '3', '0'),
-  task('22', 'Parties communes', 'Finitions / Nettoyage', 'Multi-services Pro', 'Nettoyage final et reprises', '2026-03-23', '2026-03-25', '', '', '3', '0'),
-];
+const defaultPieces = (): ChantierPiece[] => defaultPieceNames.map(name => ({
+  id: crypto.randomUUID?.() || `${Date.now()}-${name}`,
+  name,
+}));
 
-function task(id: string, piece: string, lot: string, entreprise: string, description: string, dateDebutPrevue: string, dateFinPrevue: string, dateDebutReelle: string, dateFinReelle: string, dureePrevue: string, avancement: string): ChantierTask {
+function emptyTask(id: string, piece: string): ChantierTask {
   return {
     id,
     piece,
-    lot,
-    entreprise,
-    description,
-    dateDebutPrevue,
-    dateFinPrevue,
-    dateDebutReelle,
-    dateFinReelle,
-    dureePrevue,
-    avancement,
-    responsable: '[Nom]',
+    lot: '',
+    entreprise: '',
+    description: '',
+    dateDebutPrevue: '',
+    dateFinPrevue: '',
+    dateDebutReelle: '',
+    dateFinReelle: '',
+    dureePrevue: '',
+    avancement: '0',
+    responsable: '',
     observations: '',
   };
 }
@@ -139,25 +114,10 @@ const initialData = (meta?: Partial<ConstructionMeta>): ConstructionData => ({
     updatedAt: new Date().toISOString().slice(0, 10),
     ...meta,
   },
-  tasks: seedTasks,
-  budgets: seedTasks.map(t => ({
-    id: `budget-${t.id}`,
-    taskId: t.id,
-    marcheHT: '0',
-    avenantsHT: '0',
-    situationsRegleesHT: '0',
-    observations: '',
-  })),
-  reserves: Array.from({ length: 12 }, (_, i) => ({
-    id: `reserve-${i + 1}`,
-    dateConstat: '',
-    piece: '',
-    lot: '',
-    description: '',
-    entreprise: '',
-    dateLimite: '',
-    dateLevee: '',
-  })),
+  pieces: defaultPieces(),
+  tasks: [],
+  budgets: [],
+  globalNotes: '',
 });
 
 function createProject(meta: Partial<ConstructionMeta>): ConstructionProject {
@@ -169,16 +129,34 @@ function createProject(meta: Partial<ConstructionMeta>): ConstructionProject {
   };
 }
 
-function normalizeProject(project: Partial<ConstructionProject>): ConstructionProject {
+function normalizeProject(project: Partial<ConstructionProject> & { reserves?: unknown }): ConstructionProject {
   const fallback = initialData();
+  const tasks = project.tasks || [];
+  const pieces = normalizePieces(project.pieces, tasks);
+
   return {
     id: project.id || Date.now().toString(),
     createdAt: project.createdAt || new Date().toISOString(),
     meta: { ...fallback.meta, ...project.meta },
-    tasks: project.tasks || fallback.tasks,
-    budgets: project.budgets || fallback.budgets,
-    reserves: project.reserves || fallback.reserves,
+    pieces,
+    tasks,
+    budgets: syncBudgets(tasks, project.budgets || []),
+    globalNotes: project.globalNotes || '',
   };
+}
+
+function normalizePieces(projectPieces: ChantierPiece[] | undefined, tasks: ChantierTask[]): ChantierPiece[] {
+  const existing = Array.isArray(projectPieces) && projectPieces.length ? projectPieces : defaultPieces();
+  const names = new Set(existing.map(piece => piece.name));
+  const taskPieces = tasks
+    .map(task => task.piece)
+    .filter(Boolean)
+    .filter(piece => !names.has(piece));
+
+  return [
+    ...existing,
+    ...Array.from(new Set(taskPieces)).map(name => ({ id: `piece-${name}`, name })),
+  ];
 }
 
 function loadProjects(): ConstructionProject[] {
@@ -197,6 +175,7 @@ function loadProjects(): ConstructionProject[] {
 export default function ConstructionPage() {
   const [projects, setProjects] = useState<ConstructionProject[]>(loadProjects);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedPiece, setSelectedPiece] = useState<string | null>(null);
   const [view, setView] = useState<ConstructionView>('chantier');
   const data = projects.find(project => project.id === selectedProjectId);
   const activeData = data || initialData();
@@ -214,16 +193,20 @@ export default function ConstructionPage() {
     const project = createProject(meta);
     setProjects(prev => [...prev, project]);
     setSelectedProjectId(project.id);
+    setSelectedPiece(null);
     setView('chantier');
   };
 
   const deleteProject = (id: string) => {
     setProjects(prev => prev.filter(project => project.id !== id));
-    if (selectedProjectId === id) setSelectedProjectId(null);
+    if (selectedProjectId === id) {
+      setSelectedProjectId(null);
+      setSelectedPiece(null);
+    }
   };
 
   const syncedBudgets = useMemo(() => syncBudgets(activeData.tasks, activeData.budgets), [activeData.tasks, activeData.budgets]);
-  const roomSummary = useMemo(() => buildRoomSummary(activeData.tasks, syncedBudgets), [activeData.tasks, syncedBudgets]);
+  const roomSummary = useMemo(() => buildRoomSummary(activeData.pieces, activeData.tasks, syncedBudgets), [activeData.pieces, activeData.tasks, syncedBudgets]);
 
   if (!data) {
     return (
@@ -232,6 +215,7 @@ export default function ConstructionPage() {
         onCreate={handleCreateProject}
         onOpen={id => {
           setSelectedProjectId(id);
+          setSelectedPiece(null);
           setView('chantier');
         }}
         onDelete={deleteProject}
@@ -241,6 +225,10 @@ export default function ConstructionPage() {
 
   const updateMeta = (key: keyof ConstructionMeta, value: string) => {
     updateProject(prev => ({ ...prev, meta: { ...prev.meta, [key]: value } }));
+  };
+
+  const updateNotes = (value: string) => {
+    updateProject(prev => ({ ...prev, globalNotes: value }));
   };
 
   const updateTask = (id: string, key: keyof ChantierTask, value: string) => {
@@ -257,20 +245,33 @@ export default function ConstructionPage() {
     }));
   };
 
-  const updateReserve = (id: string, key: keyof ReserveRow, value: string) => {
-    updateProject(prev => ({
-      ...prev,
-      reserves: prev.reserves.map(r => (r.id === id ? { ...r, [key]: value } : r)),
-    }));
+  const addPiece = (name: string) => {
+    const cleanName = name.trim();
+    if (!cleanName) return;
+    const id = `${Date.now()}-${cleanName}`;
+    updateProject(prev => ({ ...prev, pieces: [...prev.pieces, { id, name: cleanName }] }));
+    setSelectedPiece(cleanName);
   };
 
-  const addTask = () => {
+  const deletePiece = (pieceName: string) => {
+    updateProject(prev => ({
+      ...prev,
+      pieces: prev.pieces.filter(piece => piece.name !== pieceName),
+      tasks: prev.tasks.filter(task => task.piece !== pieceName),
+      budgets: prev.budgets.filter(budget => {
+        const task = prev.tasks.find(t => t.id === budget.taskId);
+        return task?.piece !== pieceName;
+      }),
+    }));
+    if (selectedPiece === pieceName) setSelectedPiece(null);
+  };
+
+  const addTask = (pieceName: string) => {
     updateProject(prev => {
       const id = Date.now().toString();
-      const newTask = task(id, '', '', '', '', '', '', '', '', '', '0');
       return {
         ...prev,
-        tasks: [...prev.tasks, newTask],
+        tasks: [...prev.tasks, emptyTask(id, pieceName)],
         budgets: [...syncBudgets(prev.tasks, prev.budgets), emptyBudget(id)],
       };
     });
@@ -284,16 +285,7 @@ export default function ConstructionPage() {
     }));
   };
 
-  const addReserve = () => {
-    updateProject(prev => ({
-      ...prev,
-      reserves: [...prev.reserves, { id: Date.now().toString(), dateConstat: '', piece: '', lot: '', description: '', entreprise: '', dateLimite: '', dateLevee: '' }],
-    }));
-  };
-
-  const deleteReserve = (id: string) => {
-    updateProject(prev => ({ ...prev, reserves: prev.reserves.filter(r => r.id !== id) }));
-  };
+  const selectedPieceTasks = selectedPiece ? data.tasks.filter(task => task.piece === selectedPiece) : [];
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -305,7 +297,7 @@ export default function ConstructionPage() {
             </button>
             <div>
               <h1 className="text-2xl font-bold">{data.meta.operation || 'Suivi chantier'}</h1>
-              <p className="text-sm text-muted-foreground">Rénovation appartement - maître d'oeuvre</p>
+              <p className="text-sm text-muted-foreground">Dossier chantier par pièce</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
@@ -320,8 +312,7 @@ export default function ConstructionPage() {
           {[
             ['chantier', 'Suivi chantier'],
             ['budget', 'Suivi budgétaire'],
-            ['reserves', 'Réserves'],
-            ['legende', 'Légende'],
+            ['commentaires', 'Commentaire global'],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -337,16 +328,23 @@ export default function ConstructionPage() {
         </div>
       </div>
 
-      {view === 'chantier' && (
-        <ChantierTable tasks={data.tasks} onUpdate={updateTask} onAdd={addTask} onDelete={deleteTask} summary={roomSummary} />
+      {view === 'chantier' && !selectedPiece && (
+        <PiecesDashboard pieces={data.pieces} summary={roomSummary} onOpen={setSelectedPiece} onAdd={addPiece} onDelete={deletePiece} />
+      )}
+      {view === 'chantier' && selectedPiece && (
+        <PieceTable
+          piece={selectedPiece}
+          tasks={selectedPieceTasks}
+          onBack={() => setSelectedPiece(null)}
+          onUpdate={updateTask}
+          onAdd={() => addTask(selectedPiece)}
+          onDelete={deleteTask}
+        />
       )}
       {view === 'budget' && (
         <BudgetTable tasks={data.tasks} budgets={syncedBudgets} onUpdate={updateBudget} summary={roomSummary} />
       )}
-      {view === 'reserves' && (
-        <ReservesTable reserves={data.reserves} onUpdate={updateReserve} onAdd={addReserve} onDelete={deleteReserve} />
-      )}
-      {view === 'legende' && <Legend />}
+      {view === 'commentaires' && <GlobalComments value={data.globalNotes} onChange={updateNotes} />}
     </div>
   );
 }
@@ -393,7 +391,7 @@ function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete }: {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Suivi chantier</h1>
-          <p className="text-sm text-muted-foreground">Crée un dossier par opération, puis ouvre ses tableaux.</p>
+          <p className="text-sm text-muted-foreground">Crée un dossier par opération, puis ouvre le suivi par pièce.</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -432,9 +430,9 @@ function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete }: {
               <p className="text-xs text-muted-foreground">Mise à jour : {formatDate(project.meta.updatedAt)}</p>
             </div>
             <div className="grid grid-cols-3 gap-2 my-4 text-center">
+              <MiniStat label="Pièces" value={project.pieces.length} />
               <MiniStat label="Tâches" value={project.tasks.length} />
               <MiniStat label="Budget" value={formatEuro(totalBudget(project))} />
-              <MiniStat label="Réserves" value={project.reserves.filter(r => r.dateConstat).length} />
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-border">
               <button onClick={() => onOpen(project.id)} className="flex items-center gap-1 text-primary font-medium text-sm hover:underline">
@@ -460,20 +458,133 @@ function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete }: {
   );
 }
 
-function ChantierTable({ tasks, onUpdate, onAdd, onDelete, summary }: {
+function PiecesDashboard({ pieces, summary, onOpen, onAdd, onDelete }: {
+  pieces: ChantierPiece[];
+  summary: RoomSummary[];
+  onOpen: (piece: string) => void;
+  onAdd: (name: string) => void;
+  onDelete: (piece: string) => void;
+}) {
+  const [newPiece, setNewPiece] = useState('');
+  const summaryByPiece = new Map(summary.map(row => [row.piece, row]));
+
+  const handleAdd = () => {
+    onAdd(newPiece);
+    setNewPiece('');
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Pièces du chantier</h2>
+          <p className="text-sm text-muted-foreground">Clique sur une pièce pour ouvrir son tableau de suivi.</p>
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={newPiece}
+            onChange={e => setNewPiece(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') handleAdd();
+            }}
+            placeholder="Nouvelle pièce"
+            className="w-48 bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+          <button onClick={handleAdd} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-default">
+            <Plus size={16} /> Ajouter
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {pieces.map(piece => {
+          const row = summaryByPiece.get(piece.name);
+          const progress = Math.round(row?.progress || 0);
+          return (
+            <div
+              key={piece.id}
+              className="group relative overflow-hidden bg-card border border-border rounded-lg shadow-card hover:-translate-y-0.5 hover:shadow-elevated hover:border-primary/40 transition-default"
+            >
+              <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
+              <button onClick={() => onOpen(piece.name)} className="w-full p-4 text-left">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                      <DoorOpen size={20} />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold truncate">{piece.name}</h3>
+                      <p className="text-xs text-muted-foreground">{row?.tasks || 0} tâche{(row?.tasks || 0) > 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={17} className="text-muted-foreground group-hover:text-primary transition-default" />
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Avancement</span>
+                    <span className="font-semibold">{progress}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-full rounded-full bg-primary transition-default" style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  onDelete(piece.name);
+                }}
+                className="absolute bottom-3 right-3 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-default"
+                title="Supprimer la pièce"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
+  piece: string;
   tasks: ChantierTask[];
+  onBack: () => void;
   onUpdate: (id: string, key: keyof ChantierTask, value: string) => void;
   onAdd: () => void;
   onDelete: (id: string) => void;
-  summary: RoomSummary[];
 }) {
   return (
     <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-default">
+          <ArrowLeft size={16} /> Retour aux pièces
+        </button>
+        <button onClick={onAdd} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-default">
+          <Plus size={16} /> Ajouter une tâche
+        </button>
+      </div>
+
+      <div className="rounded-lg border border-border bg-card p-4 shadow-card">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <DoorOpen size={20} />
+          </span>
+          <div>
+            <h2 className="text-xl font-semibold">{piece}</h2>
+            <p className="text-sm text-muted-foreground">{tasks.length} ligne{tasks.length > 1 ? 's' : ''} dans le suivi</p>
+          </div>
+        </div>
+      </div>
+
       <div className="overflow-x-auto border border-border rounded-lg shadow-card">
-        <table className="w-full min-w-[1450px] text-sm text-left">
+        <table className="w-full min-w-[1320px] text-sm text-left">
           <thead className="bg-secondary border-b border-border">
             <tr>
-              {['N°', 'Pièce', "Lot / Corps d'état", 'Entreprise', 'Tâche / Description', 'Début prévu', 'Fin prévue', 'Début réel', 'Fin réelle', 'Durée (j)', 'Avancement (%)', 'Retard (j)', 'Statut', 'Responsable suivi', 'Observations', ''].map(h => (
+              {['N°', "Lot / Corps d'état", 'Entreprise', 'Tâche / Description', 'Début prévu', 'Fin prévue', 'Début réel', 'Fin réelle', 'Durée (j)', 'Avancement (%)', 'Retard (j)', 'Statut', 'Responsable suivi', 'Observations', ''].map(h => (
                 <th key={h} className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -485,7 +596,6 @@ function ChantierTable({ tasks, onUpdate, onAdd, onDelete, summary }: {
               return (
                 <tr key={t.id} className="hover:bg-secondary/30 transition-default">
                   <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
-                  <td className="px-3 py-2"><Select value={t.piece} options={pieces} onChange={v => onUpdate(t.id, 'piece', v)} /></td>
                   <td className="px-3 py-2"><Select value={t.lot} options={lots} onChange={v => onUpdate(t.id, 'lot', v)} /></td>
                   <td className="px-3 py-2"><Input value={t.entreprise} onChange={v => onUpdate(t.id, 'entreprise', v)} /></td>
                   <td className="px-3 py-2"><Textarea value={t.description} onChange={v => onUpdate(t.id, 'description', v)} /></td>
@@ -507,13 +617,16 @@ function ChantierTable({ tasks, onUpdate, onAdd, onDelete, summary }: {
                 </tr>
               );
             })}
+            {tasks.length === 0 && (
+              <tr>
+                <td colSpan={15} className="px-3 py-10 text-center text-muted-foreground">
+                  Aucune ligne pour cette pièce. Clique sur Ajouter une tâche pour commencer.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-      <button onClick={onAdd} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-default">
-        <Plus size={16} /> Ajouter une tâche
-      </button>
-      <RoomSummaryTable summary={summary} />
     </div>
   );
 }
@@ -561,6 +674,13 @@ function BudgetTable({ tasks, budgets, onUpdate, summary }: {
                 </tr>
               );
             })}
+            {budgets.length === 0 && (
+              <tr>
+                <td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">
+                  Les lignes budget apparaîtront quand tu ajouteras des tâches dans les pièces.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -569,68 +689,24 @@ function BudgetTable({ tasks, budgets, onUpdate, summary }: {
   );
 }
 
-function ReservesTable({ reserves, onUpdate, onAdd, onDelete }: {
-  reserves: ReserveRow[];
-  onUpdate: (id: string, key: keyof ReserveRow, value: string) => void;
-  onAdd: () => void;
-  onDelete: (id: string) => void;
-}) {
+function GlobalComments({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <div className="space-y-4">
-      <div className="overflow-x-auto border border-border rounded-lg shadow-card">
-        <table className="w-full min-w-[1050px] text-sm text-left">
-          <thead className="bg-secondary border-b border-border">
-            <tr>
-              {['N°', 'Date constat', 'Pièce', 'Lot concerné', 'Description de la réserve', 'Entreprise responsable', 'Date limite levée', 'Date levée effective', 'Statut', ''].map(h => (
-                <th key={h} className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {reserves.map((r, i) => (
-              <tr key={r.id} className="hover:bg-secondary/30 transition-default">
-                <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
-                <td className="px-3 py-2"><Input type="date" value={r.dateConstat} onChange={v => onUpdate(r.id, 'dateConstat', v)} /></td>
-                <td className="px-3 py-2"><Select value={r.piece} options={pieces} onChange={v => onUpdate(r.id, 'piece', v)} /></td>
-                <td className="px-3 py-2"><Select value={r.lot} options={lots} onChange={v => onUpdate(r.id, 'lot', v)} /></td>
-                <td className="px-3 py-2"><Textarea value={r.description} onChange={v => onUpdate(r.id, 'description', v)} /></td>
-                <td className="px-3 py-2"><Input value={r.entreprise} onChange={v => onUpdate(r.id, 'entreprise', v)} /></td>
-                <td className="px-3 py-2"><Input type="date" value={r.dateLimite} onChange={v => onUpdate(r.id, 'dateLimite', v)} /></td>
-                <td className="px-3 py-2"><Input type="date" value={r.dateLevee} onChange={v => onUpdate(r.id, 'dateLevee', v)} /></td>
-                <td className="px-3 py-2"><StatusBadge status={getReserveStatus(r)} /></td>
-                <td className="px-3 py-2">
-                  <button onClick={() => onDelete(r.id)} className="text-destructive hover:text-destructive/80 transition-default" title="Supprimer">
-                    <Trash2 size={15} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <button onClick={onAdd} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-default">
-        <Plus size={16} /> Ajouter une réserve
-      </button>
-    </div>
-  );
-}
-
-function Legend() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className="space-y-3 border border-border rounded-lg p-4 bg-card">
-        <h2 className="text-lg font-semibold">Mode d'emploi</h2>
-        <p className="text-sm text-muted-foreground">Une ligne par tâche, classée par pièce puis par lot/corps d'état. Les colonnes Retard et Statut se calculent automatiquement.</p>
-        <p className="text-sm text-muted-foreground">Dans le budget, la pièce, le lot et l'entreprise sont repris depuis le suivi chantier. Complète seulement les montants.</p>
-        <p className="text-sm text-muted-foreground">Les réserves passent en retard si la date limite est dépassée sans date de levée.</p>
-      </section>
-      <section className="space-y-3 border border-border rounded-lg p-4 bg-card">
-        <h2 className="text-lg font-semibold">Statuts</h2>
-        <div className="flex flex-wrap gap-2">
-          {['Terminé', 'En cours', 'En retard', 'À venir', 'Levée', 'Ouverte'].map(status => <StatusBadge key={status} status={status} />)}
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <FileText size={20} />
+        </span>
+        <div>
+          <h2 className="text-xl font-semibold">Commentaire global</h2>
+          <p className="text-sm text-muted-foreground">Notes libres, pense-bêtes, points à vérifier.</p>
         </div>
-        <p className="text-sm text-muted-foreground">Avancement : saisir un nombre entre 0 et 100. Le tableau convertit automatiquement en progression.</p>
-      </section>
+      </div>
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="min-h-[420px] w-full rounded-lg border border-border bg-card p-4 text-sm leading-6 shadow-card focus:outline-none focus:ring-1 focus:ring-primary resize-y"
+        placeholder="Écrire les notes du chantier..."
+      />
     </div>
   );
 }
@@ -723,9 +799,9 @@ function ProgressInput({ value, onChange }: { value: string; onChange: (value: s
 
 function StatusBadge({ status }: { status: string }) {
   const className =
-    status === 'Terminé' || status === 'Levée'
+    status === 'Terminé'
       ? 'bg-green-100 text-green-700'
-      : status === 'En cours' || status === 'Ouverte'
+      : status === 'En cours'
         ? 'bg-blue-100 text-blue-700'
         : status === 'En retard'
           ? 'bg-red-100 text-red-700'
@@ -754,15 +830,6 @@ function getTaskStatus(task: ChantierTask) {
   return 'À venir';
 }
 
-function getReserveStatus(row: ReserveRow) {
-  if (row.dateLevee) return 'Levée';
-  const today = startOfDay(new Date());
-  const limit = parseDate(row.dateLimite);
-  if (limit && today > limit) return 'En retard';
-  if (row.dateConstat) return 'Ouverte';
-  return '';
-}
-
 function getDelay(task: ChantierTask) {
   const progress = clamp(Number(task.avancement || 0), 0, 100);
   const end = parseDate(task.dateFinPrevue);
@@ -771,9 +838,13 @@ function getDelay(task: ChantierTask) {
   return Math.max(diff, 0);
 }
 
-function buildRoomSummary(tasks: ChantierTask[], budgets: BudgetRow[]): RoomSummary[] {
+function buildRoomSummary(pieces: ChantierPiece[], tasks: ChantierTask[], budgets: BudgetRow[]): RoomSummary[] {
   const budgetByTask = new Map(budgets.map(b => [b.taskId, b]));
   const grouped = new Map<string, RoomSummary>();
+
+  pieces.forEach(piece => {
+    grouped.set(piece.name, { piece: piece.name, tasks: 0, progress: 0, budget: 0, paid: 0, remaining: 0 });
+  });
 
   tasks.forEach(t => {
     const piece = t.piece || 'Non précisé';
