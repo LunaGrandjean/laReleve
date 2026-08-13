@@ -219,13 +219,14 @@ export default function ConstructionPage() {
           setView('chantier');
         }}
         onDelete={deleteProject}
+        onUpdateMeta={(id, key, value) => {
+          setProjects(prev => prev.map(project => (
+            project.id === id ? { ...project, meta: { ...project.meta, [key]: value } } : project
+          )));
+        }}
       />
     );
   }
-
-  const updateMeta = (key: keyof ConstructionMeta, value: string) => {
-    updateProject(prev => ({ ...prev, meta: { ...prev.meta, [key]: value } }));
-  };
 
   const updateNotes = (value: string) => {
     updateProject(prev => ({ ...prev, globalNotes: value }));
@@ -288,9 +289,9 @@ export default function ConstructionPage() {
   const selectedPieceTasks = selectedPiece ? data.tasks.filter(task => task.piece === selectedPiece) : [];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="max-w-full space-y-6 overflow-hidden animate-fade-in">
       <div className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <button onClick={() => setSelectedProjectId(null)} className="p-2 rounded-md hover:bg-secondary transition-default" title="Retour aux chantiers">
               <ArrowLeft size={20} />
@@ -299,12 +300,6 @@ export default function ConstructionPage() {
               <h1 className="text-2xl font-bold">{data.meta.operation || 'Suivi chantier'}</h1>
               <p className="text-sm text-muted-foreground">Dossier chantier par pièce</p>
             </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
-            <MetaInput label="Opération" value={data.meta.operation} onChange={v => updateMeta('operation', v)} />
-            <MetaInput label="Maître d'ouvrage" value={data.meta.maitreOuvrage} onChange={v => updateMeta('maitreOuvrage', v)} />
-            <MetaInput label="Maître d'oeuvre" value={data.meta.maitreOeuvre} onChange={v => updateMeta('maitreOeuvre', v)} />
-            <MetaInput label="Mise à jour" type="date" value={data.meta.updatedAt} onChange={v => updateMeta('updatedAt', v)} />
           </div>
         </div>
 
@@ -349,11 +344,12 @@ export default function ConstructionPage() {
   );
 }
 
-function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete }: {
+function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete, onUpdateMeta }: {
   projects: ConstructionProject[];
   onCreate: (meta: Partial<ConstructionMeta>) => void;
   onOpen: (id: string) => void;
   onDelete: (id: string) => void;
+  onUpdateMeta: (id: string, key: keyof ConstructionMeta, value: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [operation, setOperation] = useState('');
@@ -423,11 +419,13 @@ function ConstructionProjectsList({ projects, onCreate, onOpen, onDelete }: {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {projects.map(project => (
           <div key={project.id} className="bg-card border border-border rounded-lg p-5 shadow-card hover:shadow-elevated transition-default">
-            <div className="space-y-1">
-              <h3 className="font-semibold text-lg">{project.meta.operation || 'Opération sans nom'}</h3>
-              <p className="text-sm text-muted-foreground">Maître d'ouvrage : {project.meta.maitreOuvrage || '-'}</p>
-              <p className="text-sm text-muted-foreground">Maître d'oeuvre : {project.meta.maitreOeuvre || '-'}</p>
-              <p className="text-xs text-muted-foreground">Mise à jour : {formatDate(project.meta.updatedAt)}</p>
+            <div className="space-y-3">
+              <MetaInput label="Opération" value={project.meta.operation} onChange={v => onUpdateMeta(project.id, 'operation', v)} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <MetaInput label="Maître d'ouvrage" value={project.meta.maitreOuvrage} onChange={v => onUpdateMeta(project.id, 'maitreOuvrage', v)} />
+                <MetaInput label="Maître d'oeuvre" value={project.meta.maitreOeuvre} onChange={v => onUpdateMeta(project.id, 'maitreOeuvre', v)} />
+              </div>
+              <MetaInput label="Mise à jour" type="date" value={project.meta.updatedAt} onChange={v => onUpdateMeta(project.id, 'updatedAt', v)} />
             </div>
             <div className="grid grid-cols-3 gap-2 my-4 text-center">
               <MiniStat label="Pièces" value={project.pieces.length} />
@@ -563,9 +561,6 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
         <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-default">
           <ArrowLeft size={16} /> Retour aux pièces
         </button>
-        <button onClick={onAdd} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-default">
-          <Plus size={16} /> Ajouter une tâche
-        </button>
       </div>
 
       <div className="rounded-lg border border-border bg-card p-4 shadow-card">
@@ -580,7 +575,7 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
         </div>
       </div>
 
-      <div className="overflow-x-auto border border-border rounded-lg shadow-card">
+      <div className="max-w-full overflow-x-auto border border-border rounded-lg shadow-card">
         <table className="w-full min-w-[1320px] text-sm text-left">
           <thead className="bg-secondary border-b border-border">
             <tr>
@@ -620,13 +615,16 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
             {tasks.length === 0 && (
               <tr>
                 <td colSpan={15} className="px-3 py-10 text-center text-muted-foreground">
-                  Aucune ligne pour cette pièce. Clique sur Ajouter une tâche pour commencer.
+                  Aucune ligne pour cette pièce. Clique sur Ajouter une ligne pour commencer.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+      <button onClick={onAdd} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-default">
+        <Plus size={16} /> Ajouter une ligne
+      </button>
     </div>
   );
 }
@@ -640,7 +638,7 @@ function BudgetTable({ tasks, budgets, onUpdate, summary }: {
   const taskById = new Map(tasks.map(t => [t.id, t]));
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto border border-border rounded-lg shadow-card">
+      <div className="max-w-full overflow-x-auto border border-border rounded-lg shadow-card">
         <table className="w-full min-w-[1150px] text-sm text-left">
           <thead className="bg-secondary border-b border-border">
             <tr>
@@ -723,7 +721,7 @@ interface RoomSummary {
 function RoomSummaryTable({ summary, showBudget = false }: { summary: RoomSummary[]; showBudget?: boolean }) {
   if (!summary.length) return null;
   return (
-    <div className="overflow-x-auto border border-border rounded-lg">
+    <div className="max-w-full overflow-x-auto border border-border rounded-lg">
       <table className="w-full text-sm text-left">
         <thead className="bg-secondary border-b border-border">
           <tr>
