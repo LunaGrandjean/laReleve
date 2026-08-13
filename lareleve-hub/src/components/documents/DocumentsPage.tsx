@@ -46,8 +46,32 @@ function emptyFolder(name: string): FolderNode {
   return { name, subfolders: [], files: [] };
 }
 
+function normalizeFolderName(name: string) {
+  const normalized = name
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+
+  const arrondissementMatch = normalized.match(/^(\d{1,2})(?:er|e|eme|eme arrondissement| arrondissement)?$/);
+  if (arrondissementMatch) {
+    const number = Number(arrondissementMatch[1]);
+    if (number >= 1 && number <= 20) return `paris-arrondissement-${number}`;
+  }
+
+  const arrondissementWithText = normalized.match(/^(\d{1,2}).*arrondissement$/);
+  if (arrondissementWithText) {
+    const number = Number(arrondissementWithText[1]);
+    if (number >= 1 && number <= 20) return `paris-arrondissement-${number}`;
+  }
+
+  return normalized;
+}
+
 function findFolderIndex(folders: FolderNode[], name: string) {
-  return folders.findIndex(folder => folder.name.toLowerCase() === name.toLowerCase());
+  const target = normalizeFolderName(name);
+  return folders.findIndex(folder => normalizeFolderName(folder.name) === target);
 }
 
 function mergeFolder(target: FolderNode, incoming: FolderNode): FolderNode {
@@ -73,6 +97,43 @@ function mergeFolder(target: FolderNode, incoming: FolderNode): FolderNode {
   });
 
   return merged;
+}
+
+function normalizeFolderTree(folder: FolderNode): FolderNode {
+  return folder.subfolders.reduce<FolderNode>(
+    (normalized, subfolder) => {
+      const cleanSubfolder = normalizeFolderTree(subfolder);
+      const existingIndex = findFolderIndex(normalized.subfolders, cleanSubfolder.name);
+
+      if (existingIndex >= 0) {
+        normalized.subfolders[existingIndex] = mergeFolder(normalized.subfolders[existingIndex], cleanSubfolder);
+      } else {
+        normalized.subfolders.push(cleanSubfolder);
+      }
+
+      return normalized;
+    },
+    {
+      ...folder,
+      files: folder.files.filter(file => file.name !== '.DS_Store'),
+      subfolders: [],
+    }
+  );
+}
+
+function normalizeStructure(structure: FolderStructure): FolderStructure {
+  return Object.values(structure).reduce<FolderStructure>((next, folder) => {
+    const cleanFolder = normalizeFolderTree(folder);
+    const existingKey = Object.keys(next).find(key => normalizeFolderName(next[key].name) === normalizeFolderName(cleanFolder.name));
+
+    if (existingKey) {
+      next[existingKey] = mergeFolder(next[existingKey], cleanFolder);
+    } else {
+      next[cleanFolder.name.toLowerCase()] = cleanFolder;
+    }
+
+    return next;
+  }, {});
 }
 
 function insertFileInFolder(folder: FolderNode, parts: string[], file: StoredFile) {
@@ -117,6 +178,8 @@ async function filesToFolder(files: FileList): Promise<FolderNode | null> {
   const root = emptyFolder(rootName);
 
   for (const file of selectedFiles) {
+    if (file.name === '.DS_Store') continue;
+
     const relativePath = file.webkitRelativePath || file.name;
     const parts = relativePath.split('/').filter(Boolean);
     const fileName = parts.pop();
@@ -130,7 +193,7 @@ async function filesToFolder(files: FileList): Promise<FolderNode | null> {
 }
 
 export default function DocumentsPage() {
-  const [structure, setStructure] = useState<FolderStructure>(defaultStructure);
+  const [structure, setStructure] = useState<FolderStructure>(() => normalizeStructure(defaultStructure()));
   const [path, setPath] = useState<string[]>([]);
   const [showAddFolder, setShowAddFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -139,7 +202,7 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     storageService.loadDocuments<FolderStructure>().then(documents => {
-      if (documents) setStructure(documents);
+      if (documents) setStructure(normalizeStructure(documents));
       setHydrated(true);
     });
   }, []);
