@@ -703,18 +703,16 @@ function BudgetTable({ budgets, onUpdate, onAdd, onDelete }: {
 
 function BudgetSummary({ summary }: { summary: BudgetSummaryData }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
-      <BudgetSummaryCard label="Factures" value={summary.count.toString().padStart(2, '0')} tone="neutral" />
-      <BudgetSummaryCard label="Montant" value={`+ ${formatEuro(summary.montant)}`} tone="positive" />
-      <BudgetSummaryCard label="Avenants" value={`${summary.avenants >= 0 ? '+ ' : '- '}${formatEuro(Math.abs(summary.avenants))}`} tone={summary.avenants >= 0 ? 'positive' : 'negative'} />
-      <BudgetSummaryCard label="Total engagé" value={formatEuro(summary.total)} tone="neutral" />
-      <BudgetSummaryCard label="Reste à payer" value={`- ${formatEuro(summary.resteAPayer)}`} tone={summary.resteAPayer > 0 ? 'negative' : 'positive'} />
-      <BudgetSummaryCard label="Payé estimé" value={`+ ${formatEuro(summary.paye)}`} tone={summary.paye >= 0 ? 'positive' : 'negative'} />
+    <div className="premium-card flex flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3 text-sm">
+      <BudgetSummaryItem label="Factures" value={summary.count.toString().padStart(2, '0')} tone="neutral" />
+      <BudgetSummaryItem label="Avenant" value={`${summary.avenants >= 0 ? '+ ' : '- '}${formatEuro(Math.abs(summary.avenants))}`} tone={summary.avenants >= 0 ? 'positive' : 'negative'} />
+      <BudgetSummaryItem label="Reste à payer" value={`- ${formatEuro(summary.resteAPayer)}`} tone={summary.resteAPayer > 0 ? 'negative' : 'positive'} />
+      <BudgetSummaryItem label="Total payé" value={`+ ${formatEuro(summary.paye)}`} tone={summary.paye >= 0 ? 'positive' : 'negative'} />
     </div>
   );
 }
 
-function BudgetSummaryCard({ label, value, tone }: { label: string; value: string; tone: 'positive' | 'negative' | 'neutral' }) {
+function BudgetSummaryItem({ label, value, tone }: { label: string; value: string; tone: 'positive' | 'negative' | 'neutral' }) {
   const toneClass =
     tone === 'positive'
       ? 'text-green-300'
@@ -723,9 +721,9 @@ function BudgetSummaryCard({ label, value, tone }: { label: string; value: strin
         : 'text-white';
 
   return (
-    <div className="premium-card p-4">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-      <div className={cn('mt-2 text-xl font-semibold tabular-nums', toneClass)}>{value}</div>
+    <div className="flex items-baseline gap-2 whitespace-nowrap">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</span>
+      <span className={cn('font-semibold tabular-nums', toneClass)}>{value}</span>
     </div>
   );
 }
