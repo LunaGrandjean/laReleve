@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ChevronRight, DoorOpen, FileText, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { ArrowLeft, Bold, ChevronRight, DoorOpen, FileText, Italic, List, ListOrdered, Plus, Trash2, Underline } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type ConstructionView = 'chantier' | 'budget' | 'commentaires';
+type ConstructionView = 'chantier' | 'budget' | 'commentaires' | 'reunions';
 
 interface ConstructionMeta {
   operation: string;
@@ -44,6 +45,13 @@ interface BudgetRow {
   resteAPayerMontant: string;
 }
 
+interface MeetingNote {
+  id: string;
+  title: string;
+  date: string;
+  content: string;
+}
+
 interface ConstructionData {
   meta: ConstructionMeta;
   pieces: ChantierPiece[];
@@ -51,6 +59,7 @@ interface ConstructionData {
   budgets: BudgetRow[];
   budgetPrevisionnel: string;
   globalNotes: string;
+  meetings: MeetingNote[];
 }
 
 interface ConstructionProject extends ConstructionData {
@@ -126,6 +135,7 @@ const initialData = (meta?: Partial<ConstructionMeta>): ConstructionData => ({
   budgets: [],
   budgetPrevisionnel: '',
   globalNotes: '',
+  meetings: [],
 });
 
 function createProject(meta: Partial<ConstructionMeta>): ConstructionProject {
@@ -154,6 +164,7 @@ function normalizeProject(project: Partial<ConstructionProject> & { reserves?: u
     budgets: normalizeBudgets(project.budgets || []),
     budgetPrevisionnel: project.budgetPrevisionnel || '',
     globalNotes: project.globalNotes || '',
+    meetings: normalizeMeetings(project.meetings || []),
   };
 }
 
@@ -243,6 +254,24 @@ export default function ConstructionPage() {
     updateProject(prev => ({ ...prev, globalNotes: value }));
   };
 
+  const addMeeting = () => {
+    updateProject(prev => ({
+      ...prev,
+      meetings: [...prev.meetings, emptyMeeting(prev.meetings.length + 1)],
+    }));
+  };
+
+  const updateMeeting = (id: string, key: keyof MeetingNote, value: string) => {
+    updateProject(prev => ({
+      ...prev,
+      meetings: prev.meetings.map(meeting => (meeting.id === id ? { ...meeting, [key]: value } : meeting)),
+    }));
+  };
+
+  const deleteMeeting = (id: string) => {
+    updateProject(prev => ({ ...prev, meetings: prev.meetings.filter(meeting => meeting.id !== id) }));
+  };
+
   const updateBudgetPrevisionnel = (value: string) => {
     updateProject(prev => ({ ...prev, budgetPrevisionnel: value }));
   };
@@ -325,6 +354,7 @@ export default function ConstructionPage() {
             ['chantier', 'Suivi chantier'],
             ['budget', 'Suivi budgétaire'],
             ['commentaires', 'Commentaire global'],
+            ['reunions', 'Suivi réunion'],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -364,6 +394,9 @@ export default function ConstructionPage() {
         />
       )}
       {view === 'commentaires' && <GlobalComments value={data.globalNotes} onChange={updateNotes} />}
+      {view === 'reunions' && (
+        <MeetingTracker meetings={data.meetings} onAdd={addMeeting} onUpdate={updateMeeting} onDelete={deleteMeeting} />
+      )}
     </div>
   );
 }
@@ -786,6 +819,129 @@ function GlobalComments({ value, onChange }: { value: string; onChange: (value: 
   );
 }
 
+function MeetingTracker({ meetings, onAdd, onUpdate, onDelete }: {
+  meetings: MeetingNote[];
+  onAdd: () => void;
+  onUpdate: (id: string, key: keyof MeetingNote, value: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(meetings[0]?.id || null);
+  const previousMeetingCount = useRef(meetings.length);
+  const selectedMeeting = meetings.find(meeting => meeting.id === selectedMeetingId) || meetings[0];
+
+  useEffect(() => {
+    if (!selectedMeetingId && meetings[0]) setSelectedMeetingId(meetings[0].id);
+    if (selectedMeetingId && meetings.length && !meetings.some(meeting => meeting.id === selectedMeetingId)) {
+      setSelectedMeetingId(meetings[0].id);
+    }
+  }, [meetings, selectedMeetingId]);
+
+  useEffect(() => {
+    if (meetings.length > previousMeetingCount.current) {
+      setSelectedMeetingId(meetings[meetings.length - 1].id);
+    }
+    previousMeetingCount.current = meetings.length;
+  }, [meetings]);
+
+  const handleAdd = () => {
+    onAdd();
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <aside className="premium-card p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="section-title">Réunions</h2>
+          <button onClick={handleAdd} className="action-button-primary px-2 py-1" title="Ajouter une réunion">
+            <Plus size={15} />
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          {meetings.map((meeting, index) => (
+            <button
+              key={meeting.id}
+              onClick={() => setSelectedMeetingId(meeting.id)}
+              className={cn(
+                'w-full rounded-md border px-3 py-2 text-left transition-default',
+                selectedMeeting?.id === meeting.id
+                  ? 'border-primary/40 bg-primary/10 text-white'
+                  : 'border-white/[0.08] bg-white/[0.04] text-white/75 hover:border-primary/30 hover:text-white'
+              )}
+            >
+              <span className="block text-sm font-semibold">{meeting.title || `Réunion ${index + 1}`}</span>
+              <span className="block text-xs text-muted-foreground">{meeting.date ? formatDate(meeting.date) : 'Date non précisée'}</span>
+            </button>
+          ))}
+          {meetings.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted-foreground">Aucune réunion. Clique sur + pour commencer.</p>
+          )}
+        </div>
+      </aside>
+
+      <div className="premium-card p-4">
+        {selectedMeeting ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_180px_auto] sm:items-end">
+              <MetaInput label="Titre" value={selectedMeeting.title} onChange={v => onUpdate(selectedMeeting.id, 'title', v)} />
+              <MetaInput label="Date" type="date" value={selectedMeeting.date} onChange={v => onUpdate(selectedMeeting.id, 'date', v)} />
+              <button onClick={() => onDelete(selectedMeeting.id)} className="action-button text-destructive hover:text-destructive">
+                <Trash2 size={15} /> Supprimer
+              </button>
+            </div>
+
+            <RichTextEditor
+              editorKey={selectedMeeting.id}
+              value={selectedMeeting.content}
+              onChange={value => onUpdate(selectedMeeting.id, 'content', value)}
+            />
+          </div>
+        ) : (
+          <div className="flex min-h-[360px] items-center justify-center text-sm text-muted-foreground">
+            Ajoute une réunion pour ouvrir l’éditeur.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RichTextEditor({ editorKey, value, onChange }: { editorKey: string; value: string; onChange: (value: string) => void }) {
+  const applyFormat = (command: string, option?: string) => {
+    document.execCommand(command, false, option);
+  };
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
+      <div className="flex flex-wrap gap-1 border-b border-white/[0.08] bg-black/20 p-2">
+        <FormatButton label="Gras" onClick={() => applyFormat('bold')}><Bold size={15} /></FormatButton>
+        <FormatButton label="Italique" onClick={() => applyFormat('italic')}><Italic size={15} /></FormatButton>
+        <FormatButton label="Souligner" onClick={() => applyFormat('underline')}><Underline size={15} /></FormatButton>
+        <FormatButton label="Liste" onClick={() => applyFormat('insertUnorderedList')}><List size={15} /></FormatButton>
+        <FormatButton label="Liste numérotée" onClick={() => applyFormat('insertOrderedList')}><ListOrdered size={15} /></FormatButton>
+        <button onClick={() => applyFormat('formatBlock', 'h2')} className="action-button px-2 py-1 text-xs">H2</button>
+        <button onClick={() => applyFormat('formatBlock', 'p')} className="action-button px-2 py-1 text-xs">Texte</button>
+      </div>
+      <div
+        key={editorKey}
+        contentEditable
+        suppressContentEditableWarning
+        className="min-h-[420px] p-4 text-sm leading-6 text-white outline-none [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_ul]:list-disc"
+        dangerouslySetInnerHTML={{ __html: value || '' }}
+        onInput={e => onChange(e.currentTarget.innerHTML)}
+      />
+    </div>
+  );
+}
+
+function FormatButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <button onMouseDown={e => e.preventDefault()} onClick={onClick} className="action-button px-2 py-1" title={label}>
+      {children}
+    </button>
+  );
+}
+
 interface RoomSummary {
   piece: string;
   tasks: number;
@@ -886,6 +1042,24 @@ function normalizeBudgets(budgets: Partial<BudgetRow>[]) {
     resteAPayer: b.resteAPayer || 'Non',
     resteAPayerMontant: b.resteAPayerMontant || '',
   }));
+}
+
+function normalizeMeetings(meetings: Partial<MeetingNote>[]) {
+  return meetings.map((meeting, index) => ({
+    id: meeting.id || `${Date.now()}-${index}`,
+    title: meeting.title || `Réunion ${index + 1}`,
+    date: meeting.date || new Date().toISOString().slice(0, 10),
+    content: meeting.content || '',
+  }));
+}
+
+function emptyMeeting(index: number): MeetingNote {
+  return {
+    id: crypto.randomUUID?.() || Date.now().toString(),
+    title: `Réunion ${index}`,
+    date: new Date().toISOString().slice(0, 10),
+    content: '',
+  };
 }
 
 function emptyBudget(): BudgetRow {
