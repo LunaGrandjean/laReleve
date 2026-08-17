@@ -646,8 +646,11 @@ function BudgetTable({ budgets, onUpdate, onAdd, onDelete }: {
   onAdd: () => void;
   onDelete: (id: string) => void;
 }) {
+  const summary = buildBudgetSummary(budgets);
+
   return (
     <div className="space-y-4">
+      <BudgetSummary summary={summary} />
       <div className="table-shell">
         <table className="w-full min-w-[980px] text-sm text-left">
           <thead className="bg-secondary border-b border-border">
@@ -698,6 +701,35 @@ function BudgetTable({ budgets, onUpdate, onAdd, onDelete }: {
   );
 }
 
+function BudgetSummary({ summary }: { summary: BudgetSummaryData }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <BudgetSummaryCard label="Factures" value={summary.count.toString().padStart(2, '0')} tone="neutral" />
+      <BudgetSummaryCard label="Montant" value={`+ ${formatEuro(summary.montant)}`} tone="positive" />
+      <BudgetSummaryCard label="Avenants" value={`${summary.avenants >= 0 ? '+ ' : '- '}${formatEuro(Math.abs(summary.avenants))}`} tone={summary.avenants >= 0 ? 'positive' : 'negative'} />
+      <BudgetSummaryCard label="Total engagé" value={formatEuro(summary.total)} tone="neutral" />
+      <BudgetSummaryCard label="Reste à payer" value={`- ${formatEuro(summary.resteAPayer)}`} tone={summary.resteAPayer > 0 ? 'negative' : 'positive'} />
+      <BudgetSummaryCard label="Payé estimé" value={`+ ${formatEuro(summary.paye)}`} tone={summary.paye >= 0 ? 'positive' : 'negative'} />
+    </div>
+  );
+}
+
+function BudgetSummaryCard({ label, value, tone }: { label: string; value: string; tone: 'positive' | 'negative' | 'neutral' }) {
+  const toneClass =
+    tone === 'positive'
+      ? 'text-green-300'
+      : tone === 'negative'
+        ? 'text-red-300'
+        : 'text-white';
+
+  return (
+    <div className="premium-card p-4">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+      <div className={cn('mt-2 text-xl font-semibold tabular-nums', toneClass)}>{value}</div>
+    </div>
+  );
+}
+
 function GlobalComments({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <div className="space-y-3">
@@ -724,6 +756,15 @@ interface RoomSummary {
   piece: string;
   tasks: number;
   progress: number;
+}
+
+interface BudgetSummaryData {
+  count: number;
+  montant: number;
+  avenants: number;
+  total: number;
+  resteAPayer: number;
+  paye: number;
 }
 
 function MetaInput({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
@@ -823,6 +864,24 @@ function emptyBudget(): BudgetRow {
     avenant: '',
     resteAPayer: 'Non',
     resteAPayerMontant: '',
+  };
+}
+
+function buildBudgetSummary(budgets: BudgetRow[]): BudgetSummaryData {
+  const montant = budgets.reduce((total, row) => total + money(row.montant), 0);
+  const avenants = budgets.reduce((total, row) => total + money(row.avenant), 0);
+  const resteAPayer = budgets.reduce((total, row) => (
+    row.resteAPayer === 'Oui' ? total + money(row.resteAPayerMontant) : total
+  ), 0);
+  const total = montant + avenants;
+
+  return {
+    count: budgets.length,
+    montant,
+    avenants,
+    total,
+    resteAPayer,
+    paye: total - resteAPayer,
   };
 }
 
