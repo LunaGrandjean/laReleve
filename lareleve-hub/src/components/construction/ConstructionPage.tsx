@@ -907,8 +907,18 @@ function MeetingTracker({ meetings, onAdd, onUpdate, onDelete }: {
 }
 
 function RichTextEditor({ editorKey, value, onChange }: { editorKey: string; value: string; onChange: (value: string) => void }) {
+  const editorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value || '';
+    }
+  }, [editorKey]);
+
   const applyFormat = (command: string, option?: string) => {
+    editorRef.current?.focus();
     document.execCommand(command, false, option);
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
   };
 
   return (
@@ -919,15 +929,17 @@ function RichTextEditor({ editorKey, value, onChange }: { editorKey: string; val
         <FormatButton label="Souligner" onClick={() => applyFormat('underline')}><Underline size={15} /></FormatButton>
         <FormatButton label="Liste" onClick={() => applyFormat('insertUnorderedList')}><List size={15} /></FormatButton>
         <FormatButton label="Liste numérotée" onClick={() => applyFormat('insertOrderedList')}><ListOrdered size={15} /></FormatButton>
-        <button onClick={() => applyFormat('formatBlock', 'h2')} className="action-button px-2 py-1 text-xs">H2</button>
-        <button onClick={() => applyFormat('formatBlock', 'p')} className="action-button px-2 py-1 text-xs">Texte</button>
+        <FormatButton label="Titre" onClick={() => applyFormat('formatBlock', 'h2')}>H2</FormatButton>
+        <FormatButton label="Texte normal" onClick={() => applyFormat('formatBlock', 'p')}>Texte</FormatButton>
       </div>
       <div
         key={editorKey}
+        ref={editorRef}
+        dir="ltr"
         contentEditable
         suppressContentEditableWarning
-        className="min-h-[420px] p-4 text-sm leading-6 text-white outline-none [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_ul]:list-disc"
-        dangerouslySetInnerHTML={{ __html: value || '' }}
+        className="min-h-[420px] p-4 text-left text-sm leading-6 text-white outline-none [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_ul]:list-disc"
+        style={{ unicodeBidi: 'plaintext' }}
         onInput={e => onChange(e.currentTarget.innerHTML)}
       />
     </div>
