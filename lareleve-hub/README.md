@@ -1,3 +1,3 @@
-# La Relève by Luna
+# La Relève
 
 
