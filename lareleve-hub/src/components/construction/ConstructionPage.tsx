@@ -49,6 +49,7 @@ interface ConstructionData {
   pieces: ChantierPiece[];
   tasks: ChantierTask[];
   budgets: BudgetRow[];
+  budgetPrevisionnel: string;
   globalNotes: string;
 }
 
@@ -123,6 +124,7 @@ const initialData = (meta?: Partial<ConstructionMeta>): ConstructionData => ({
   pieces: defaultPieces(),
   tasks: [],
   budgets: [],
+  budgetPrevisionnel: '',
   globalNotes: '',
 });
 
@@ -150,6 +152,7 @@ function normalizeProject(project: Partial<ConstructionProject> & { reserves?: u
     pieces,
     tasks,
     budgets: normalizeBudgets(project.budgets || []),
+    budgetPrevisionnel: project.budgetPrevisionnel || '',
     globalNotes: project.globalNotes || '',
   };
 }
@@ -238,6 +241,10 @@ export default function ConstructionPage() {
 
   const updateNotes = (value: string) => {
     updateProject(prev => ({ ...prev, globalNotes: value }));
+  };
+
+  const updateBudgetPrevisionnel = (value: string) => {
+    updateProject(prev => ({ ...prev, budgetPrevisionnel: value }));
   };
 
   const updateTask = (id: string, key: keyof ChantierTask, value: string) => {
@@ -347,7 +354,14 @@ export default function ConstructionPage() {
         />
       )}
       {view === 'budget' && (
-        <BudgetTable budgets={data.budgets} onUpdate={updateBudget} onAdd={addBudget} onDelete={deleteBudget} />
+        <BudgetTable
+          budgets={data.budgets}
+          budgetPrevisionnel={data.budgetPrevisionnel}
+          onBudgetPrevisionnelChange={updateBudgetPrevisionnel}
+          onUpdate={updateBudget}
+          onAdd={addBudget}
+          onDelete={deleteBudget}
+        />
       )}
       {view === 'commentaires' && <GlobalComments value={data.globalNotes} onChange={updateNotes} />}
     </div>
@@ -640,8 +654,10 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
   );
 }
 
-function BudgetTable({ budgets, onUpdate, onAdd, onDelete }: {
+function BudgetTable({ budgets, budgetPrevisionnel, onBudgetPrevisionnelChange, onUpdate, onAdd, onDelete }: {
   budgets: BudgetRow[];
+  budgetPrevisionnel: string;
+  onBudgetPrevisionnelChange: (value: string) => void;
   onUpdate: (id: string, key: keyof BudgetRow, value: string) => void;
   onAdd: () => void;
   onDelete: (id: string) => void;
@@ -650,7 +666,7 @@ function BudgetTable({ budgets, onUpdate, onAdd, onDelete }: {
 
   return (
     <div className="space-y-4">
-      <BudgetSummary summary={summary} />
+      <BudgetSummary summary={summary} budgetPrevisionnel={budgetPrevisionnel} onBudgetPrevisionnelChange={onBudgetPrevisionnelChange} />
       <div className="table-shell">
         <table className="w-full min-w-[980px] text-sm text-left">
           <thead className="bg-secondary border-b border-border">
@@ -701,14 +717,34 @@ function BudgetTable({ budgets, onUpdate, onAdd, onDelete }: {
   );
 }
 
-function BudgetSummary({ summary }: { summary: BudgetSummaryData }) {
+function BudgetSummary({ summary, budgetPrevisionnel, onBudgetPrevisionnelChange }: {
+  summary: BudgetSummaryData;
+  budgetPrevisionnel: string;
+  onBudgetPrevisionnelChange: (value: string) => void;
+}) {
   return (
     <div className="premium-card flex flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3 text-sm">
+      <BudgetSummaryInput label="Budget prévisionnel" value={budgetPrevisionnel} onChange={onBudgetPrevisionnelChange} />
       <BudgetSummaryItem label="Factures" value={summary.count.toString().padStart(2, '0')} tone="neutral" />
       <BudgetSummaryItem label="Avenant" value={`${summary.avenants >= 0 ? '+ ' : '- '}${formatEuro(Math.abs(summary.avenants))}`} tone={summary.avenants >= 0 ? 'positive' : 'negative'} />
       <BudgetSummaryItem label="Reste à payer" value={`- ${formatEuro(summary.resteAPayer)}`} tone={summary.resteAPayer > 0 ? 'negative' : 'positive'} />
       <BudgetSummaryItem label="Total payé" value={`+ ${formatEuro(summary.paye)}`} tone={summary.paye >= 0 ? 'positive' : 'negative'} />
     </div>
+  );
+}
+
+function BudgetSummaryInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="flex items-center gap-2 whitespace-nowrap">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</span>
+      <input
+        type="number"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-28 rounded border border-white/[0.08] bg-white/[0.05] px-2 py-1 text-sm font-semibold tabular-nums text-white focus:outline-none focus:ring-1 focus:ring-primary"
+        placeholder="0"
+      />
+    </label>
   );
 }
 
