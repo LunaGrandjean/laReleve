@@ -35,11 +35,13 @@ interface ChantierTask {
 
 interface BudgetRow {
   id: string;
-  taskId: string;
-  marcheHT: string;
-  avenantsHT: string;
-  situationsRegleesHT: string;
-  observations: string;
+  numeroFacture: string;
+  entreprise: string;
+  description: string;
+  montant: string;
+  avenant: string;
+  resteAPayer: string;
+  resteAPayerMontant: string;
 }
 
 interface ConstructionData {
@@ -147,7 +149,7 @@ function normalizeProject(project: Partial<ConstructionProject> & { reserves?: u
     meta: { ...fallback.meta, ...project.meta },
     pieces,
     tasks,
-    budgets: syncBudgets(tasks, project.budgets || []),
+    budgets: normalizeBudgets(project.budgets || []),
     globalNotes: project.globalNotes || '',
   };
 }
@@ -212,8 +214,7 @@ export default function ConstructionPage() {
     }
   };
 
-  const syncedBudgets = useMemo(() => syncBudgets(activeData.tasks, activeData.budgets), [activeData.tasks, activeData.budgets]);
-  const roomSummary = useMemo(() => buildRoomSummary(activeData.pieces, activeData.tasks, syncedBudgets), [activeData.pieces, activeData.tasks, syncedBudgets]);
+  const roomSummary = useMemo(() => buildRoomSummary(activeData.pieces, activeData.tasks), [activeData.pieces, activeData.tasks]);
 
   if (!data) {
     return (
@@ -246,11 +247,19 @@ export default function ConstructionPage() {
     }));
   };
 
-  const updateBudget = (taskId: string, key: keyof BudgetRow, value: string) => {
+  const updateBudget = (id: string, key: keyof BudgetRow, value: string) => {
     updateProject(prev => ({
       ...prev,
-      budgets: syncBudgets(prev.tasks, prev.budgets).map(b => (b.taskId === taskId ? { ...b, [key]: value } : b)),
+      budgets: prev.budgets.map(b => (b.id === id ? { ...b, [key]: value } : b)),
     }));
+  };
+
+  const addBudget = () => {
+    updateProject(prev => ({ ...prev, budgets: [...prev.budgets, emptyBudget()] }));
+  };
+
+  const deleteBudget = (id: string) => {
+    updateProject(prev => ({ ...prev, budgets: prev.budgets.filter(b => b.id !== id) }));
   };
 
   const addPiece = (name: string) => {
@@ -266,10 +275,6 @@ export default function ConstructionPage() {
       ...prev,
       pieces: prev.pieces.filter(piece => piece.name !== pieceName),
       tasks: prev.tasks.filter(task => task.piece !== pieceName),
-      budgets: prev.budgets.filter(budget => {
-        const task = prev.tasks.find(t => t.id === budget.taskId);
-        return task?.piece !== pieceName;
-      }),
     }));
     if (selectedPiece === pieceName) setSelectedPiece(null);
   };
@@ -280,7 +285,6 @@ export default function ConstructionPage() {
       return {
         ...prev,
         tasks: [...prev.tasks, emptyTask(id, pieceName)],
-        budgets: [...syncBudgets(prev.tasks, prev.budgets), emptyBudget(id)],
       };
     });
   };
@@ -289,7 +293,6 @@ export default function ConstructionPage() {
     updateProject(prev => ({
       ...prev,
       tasks: prev.tasks.filter(t => t.id !== id),
-      budgets: prev.budgets.filter(b => b.taskId !== id),
     }));
   };
 
@@ -344,7 +347,7 @@ export default function ConstructionPage() {
         />
       )}
       {view === 'budget' && (
-        <BudgetTable tasks={data.tasks} budgets={syncedBudgets} onUpdate={updateBudget} summary={roomSummary} />
+        <BudgetTable budgets={data.budgets} onUpdate={updateBudget} onAdd={addBudget} onDelete={deleteBudget} />
       )}
       {view === 'commentaires' && <GlobalComments value={data.globalNotes} onChange={updateNotes} />}
     </div>
@@ -637,60 +640,60 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
   );
 }
 
-function BudgetTable({ tasks, budgets, onUpdate, summary }: {
-  tasks: ChantierTask[];
+function BudgetTable({ budgets, onUpdate, onAdd, onDelete }: {
   budgets: BudgetRow[];
-  onUpdate: (taskId: string, key: keyof BudgetRow, value: string) => void;
-  summary: RoomSummary[];
+  onUpdate: (id: string, key: keyof BudgetRow, value: string) => void;
+  onAdd: () => void;
+  onDelete: (id: string) => void;
 }) {
-  const taskById = new Map(tasks.map(t => [t.id, t]));
   return (
     <div className="space-y-4">
       <div className="table-shell">
-        <table className="w-full min-w-[1150px] text-sm text-left">
+        <table className="w-full min-w-[980px] text-sm text-left">
           <thead className="bg-secondary border-b border-border">
             <tr>
-              {['N°', 'Pièce', "Lot / Corps d'état", 'Entreprise', 'Marché HT signé (€)', 'Avenants HT (€)', 'Budget total HT (€)', 'Situations réglées HT (€)', 'Reste à payer HT (€)', '% consommé', 'Observations'].map(h => (
+              {['N°', 'Numéro de facture', 'Entreprise', 'Description', 'Montant', 'Avenant', 'Reste à payer', 'Montant restant', ''].map(h => (
                 <th key={h} className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {budgets.map((b, i) => {
-              const t = taskById.get(b.taskId);
-              const marche = money(b.marcheHT);
-              const avenants = money(b.avenantsHT);
-              const total = marche + avenants;
-              const paid = money(b.situationsRegleesHT);
-              const remaining = total - paid;
-              const consumed = total > 0 ? paid / total : 0;
-              return (
-                <tr key={b.id} className="hover:bg-secondary/30 transition-default">
-                  <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
-                  <td className="px-3 py-2">{t?.piece || ''}</td>
-                  <td className="px-3 py-2">{t?.lot || ''}</td>
-                  <td className="px-3 py-2">{t?.entreprise || ''}</td>
-                  <td className="px-3 py-2"><Input type="number" value={b.marcheHT} onChange={v => onUpdate(b.taskId, 'marcheHT', v)} /></td>
-                  <td className="px-3 py-2"><Input type="number" value={b.avenantsHT} onChange={v => onUpdate(b.taskId, 'avenantsHT', v)} /></td>
-                  <td className="px-3 py-2 font-medium">{formatEuro(total)}</td>
-                  <td className="px-3 py-2"><Input type="number" value={b.situationsRegleesHT} onChange={v => onUpdate(b.taskId, 'situationsRegleesHT', v)} /></td>
-                  <td className="px-3 py-2 font-medium">{formatEuro(remaining)}</td>
-                  <td className="px-3 py-2">{Math.round(consumed * 100)}%</td>
-                  <td className="px-3 py-2"><Textarea value={b.observations} onChange={v => onUpdate(b.taskId, 'observations', v)} /></td>
-                </tr>
-              );
-            })}
+            {budgets.map((b, i) => (
+              <tr key={b.id} className="hover:bg-secondary/30 transition-default">
+                <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                <td className="px-3 py-2"><Input value={b.numeroFacture} onChange={v => onUpdate(b.id, 'numeroFacture', v)} /></td>
+                <td className="px-3 py-2"><Input value={b.entreprise} onChange={v => onUpdate(b.id, 'entreprise', v)} /></td>
+                <td className="px-3 py-2"><Textarea value={b.description} onChange={v => onUpdate(b.id, 'description', v)} /></td>
+                <td className="px-3 py-2"><Input type="number" value={b.montant} onChange={v => onUpdate(b.id, 'montant', v)} /></td>
+                <td className="px-3 py-2"><Input type="number" value={b.avenant} onChange={v => onUpdate(b.id, 'avenant', v)} /></td>
+                <td className="px-3 py-2"><Select value={b.resteAPayer} options={['Non', 'Oui']} onChange={v => onUpdate(b.id, 'resteAPayer', v)} /></td>
+                <td className="px-3 py-2">
+                  {b.resteAPayer === 'Oui' ? (
+                    <Input type="number" value={b.resteAPayerMontant} onChange={v => onUpdate(b.id, 'resteAPayerMontant', v)} />
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <button onClick={() => onDelete(b.id)} className="text-destructive hover:text-destructive/80 transition-default" title="Supprimer">
+                    <Trash2 size={15} />
+                  </button>
+                </td>
+              </tr>
+            ))}
             {budgets.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">
-                  Les lignes budget apparaîtront quand tu ajouteras des tâches dans les pièces.
+                <td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">
+                  Aucune ligne budgétaire. Clique sur Ajouter une ligne pour commencer.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-      <RoomSummaryTable summary={summary} showBudget />
+      <button onClick={onAdd} className="action-button-primary">
+        <Plus size={16} /> Ajouter une ligne
+      </button>
     </div>
   );
 }
@@ -721,41 +724,6 @@ interface RoomSummary {
   piece: string;
   tasks: number;
   progress: number;
-  budget: number;
-  paid: number;
-  remaining: number;
-}
-
-function RoomSummaryTable({ summary, showBudget = false }: { summary: RoomSummary[]; showBudget?: boolean }) {
-  if (!summary.length) return null;
-  return (
-    <div className="table-shell">
-      <table className="w-full text-sm text-left">
-        <thead className="bg-secondary border-b border-border">
-          <tr>
-            <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Synthèse par pièce</th>
-            <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Tâches</th>
-            <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Avancement moyen</th>
-            {showBudget && <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Budget total</th>}
-            {showBudget && <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Réglé</th>}
-            {showBudget && <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Reste</th>}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {summary.map(row => (
-            <tr key={row.piece}>
-              <td className="px-3 py-2 font-medium">{row.piece}</td>
-              <td className="px-3 py-2">{row.tasks}</td>
-              <td className="px-3 py-2">{Math.round(row.progress)}%</td>
-              {showBudget && <td className="px-3 py-2">{formatEuro(row.budget)}</td>}
-              {showBudget && <td className="px-3 py-2">{formatEuro(row.paid)}</td>}
-              {showBudget && <td className="px-3 py-2">{formatEuro(row.remaining)}</td>}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 }
 
 function MetaInput({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
@@ -824,12 +792,38 @@ function StatusSelect({ value, onChange }: { value: string; onChange: (value: st
   );
 }
 
-function syncBudgets(tasks: ChantierTask[], budgets: BudgetRow[]) {
-  return tasks.map(t => budgets.find(b => b.taskId === t.id) || emptyBudget(t.id));
+function normalizeBudgets(budgets: Partial<BudgetRow>[]) {
+  return (budgets as Array<Partial<BudgetRow> & { taskId?: string }>).filter(b => (
+    !b.taskId ||
+    b.numeroFacture ||
+    b.entreprise ||
+    b.description ||
+    b.montant ||
+    b.avenant ||
+    b.resteAPayerMontant
+  )).map(b => ({
+    id: b.id || Date.now().toString(),
+    numeroFacture: b.numeroFacture || '',
+    entreprise: b.entreprise || '',
+    description: b.description || '',
+    montant: b.montant || '',
+    avenant: b.avenant || '',
+    resteAPayer: b.resteAPayer || 'Non',
+    resteAPayerMontant: b.resteAPayerMontant || '',
+  }));
 }
 
-function emptyBudget(taskId: string): BudgetRow {
-  return { id: `budget-${taskId}`, taskId, marcheHT: '0', avenantsHT: '0', situationsRegleesHT: '0', observations: '' };
+function emptyBudget(): BudgetRow {
+  return {
+    id: Date.now().toString(),
+    numeroFacture: '',
+    entreprise: '',
+    description: '',
+    montant: '',
+    avenant: '',
+    resteAPayer: 'Non',
+    resteAPayerMontant: '',
+  };
 }
 
 function getTaskStatus(task: ChantierTask) {
@@ -852,25 +846,18 @@ function getDelay(task: ChantierTask) {
   return Math.max(diff, 0);
 }
 
-function buildRoomSummary(pieces: ChantierPiece[], tasks: ChantierTask[], budgets: BudgetRow[]): RoomSummary[] {
-  const budgetByTask = new Map(budgets.map(b => [b.taskId, b]));
+function buildRoomSummary(pieces: ChantierPiece[], tasks: ChantierTask[]): RoomSummary[] {
   const grouped = new Map<string, RoomSummary>();
 
   pieces.forEach(piece => {
-    grouped.set(piece.name, { piece: piece.name, tasks: 0, progress: 0, budget: 0, paid: 0, remaining: 0 });
+    grouped.set(piece.name, { piece: piece.name, tasks: 0, progress: 0 });
   });
 
   tasks.forEach(t => {
     const piece = t.piece || 'Non précisé';
-    const budget = budgetByTask.get(t.id);
-    const total = money(budget?.marcheHT || '0') + money(budget?.avenantsHT || '0');
-    const paid = money(budget?.situationsRegleesHT || '0');
-    const current = grouped.get(piece) || { piece, tasks: 0, progress: 0, budget: 0, paid: 0, remaining: 0 };
+    const current = grouped.get(piece) || { piece, tasks: 0, progress: 0 };
     current.tasks += 1;
     current.progress += clamp(Number(t.avancement || 0), 0, 100);
-    current.budget += total;
-    current.paid += paid;
-    current.remaining += total - paid;
     grouped.set(piece, current);
   });
 
@@ -878,8 +865,8 @@ function buildRoomSummary(pieces: ChantierPiece[], tasks: ChantierTask[], budget
 }
 
 function totalBudget(project: ConstructionProject) {
-  return syncBudgets(project.tasks, project.budgets).reduce((total, budget) => (
-    total + money(budget.marcheHT) + money(budget.avenantsHT)
+  return project.budgets.reduce((total, budget) => (
+    total + money(budget.montant) + money(budget.avenant)
   ), 0);
 }
 
