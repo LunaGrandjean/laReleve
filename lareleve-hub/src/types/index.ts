@@ -50,10 +50,21 @@ export interface Travaux {
   date: string;
 }
 
+export interface SuiviAction {
+  id: string;
+  date: string;
+  action: string;
+  bien: string;
+  statut: string;
+  commentaire: string;
+  prochaineAction: string;
+}
+
 export interface Member {
   id: string;
   name: string;
   notes: string;
+  suiviActions: SuiviAction[];
   recherches: Recherche[];
   offres: Offre[];
   travaux: Travaux[];

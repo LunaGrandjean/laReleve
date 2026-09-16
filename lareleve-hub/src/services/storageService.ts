@@ -11,6 +11,15 @@ const DB_VERSION = 1;
 const normalizeData = (data: Partial<AppData> | null | undefined): AppData => ({
   members: (data?.members || []).map(member => ({
     ...member,
+    suiviActions: (member.suiviActions || []).map(action => ({
+      id: action.id || Date.now().toString(),
+      date: action.date || '',
+      action: action.action || '',
+      bien: action.bien || '',
+      statut: action.statut || '',
+      commentaire: action.commentaire || '',
+      prochaineAction: action.prochaineAction || '',
+    })),
     recherches: (member.recherches || []).map(recherche => ({
       ...recherche,
       statut: normalizeStatus(recherche.statut),

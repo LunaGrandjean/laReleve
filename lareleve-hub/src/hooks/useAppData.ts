@@ -22,6 +22,7 @@ export function useAppData() {
       id: Date.now().toString(),
       name,
       notes: '',
+      suiviActions: [],
       recherches: [],
       offres: [],
       travaux: [],

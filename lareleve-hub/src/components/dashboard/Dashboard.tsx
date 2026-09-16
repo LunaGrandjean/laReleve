@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { AppData } from '@/types';
-import { CheckCircle, Clock, FileText, Hammer, Search, Users, XCircle } from 'lucide-react';
+import { AppData, SuiviAction } from '@/types';
+import { CheckCircle, Clock, FileText, Hammer, MessageSquare, Search, Users, XCircle } from 'lucide-react';
 import StatCard from './StatCard';
 
 interface DashboardProps {
@@ -72,6 +72,8 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
   const stats = {
     totalMembers: data.members.length,
     totalRecherches: data.members.reduce((a, m) => a + m.recherches.length, 0),
+    totalSuiviActions: data.members.reduce((a, m) => a + (m.suiviActions || []).length, 0),
+    actionsARelancer: data.members.reduce((a, m) => a + (m.suiviActions || []).filter(action => action.statut === 'A relancer').length, 0),
     offresTotal: data.members.reduce((a, m) => a + m.offres.length, 0),
     offresAcceptees: data.members.reduce((a, m) => a + m.offres.filter(o => o.statut === 'Acceptée').length, 0),
     offresAttente: data.members.reduce((a, m) => a + m.offres.filter(o => o.statut === 'En attente').length, 0),
@@ -83,6 +85,13 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
 
   const recentActivity = data.members
     .flatMap(m => [
+      ...(m.suiviActions || []).map(action => ({
+        type: 'Suivi' as const,
+        label: `${action.action || 'Action'}${action.bien ? ` - ${action.bien}` : ''}${action.commentaire ? `: ${action.commentaire}` : ''}`,
+        status: action.statut,
+        member: m.name,
+        date: action.date || action.prochaineAction,
+      })),
       ...m.offres.map(o => ({ type: 'Offre' as const, label: `${o.type} - ${o.adresse}`, status: o.statut, member: m.name, date: o.date })),
       ...m.travaux.map(t => ({ type: 'Travaux' as const, label: t.tache, status: t.statut, member: m.name, date: t.date })),
     ])
@@ -102,6 +111,8 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
           <div className="space-y-3">
             <StatCard title="Membres" value={stats.totalMembers} icon={<Users size={20} />} variant="noir" />
             <StatCard title="Recherches" value={stats.totalRecherches} icon={<Search size={20} />} variant="primary" />
+            <StatCard title="Suivi actions" value={stats.totalSuiviActions} icon={<MessageSquare size={20} />} variant="accent" />
+            <StatCard title="A relancer" value={stats.actionsARelancer} icon={<Clock size={20} />} variant="primary" />
           </div>
         </div>
 
@@ -132,7 +143,7 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
             <table className="w-full text-left text-sm">
               <thead className="border-b border-white/[0.08] bg-white/[0.04]">
                 <tr>
-                  {['Membre', 'Recherches', 'Offres', 'Travaux', ''].map(label => (
+                  {['Membre', 'Recherches', 'Offres', 'Suivi', 'Dernier contact', ''].map(label => (
                     <th key={label} className="px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/50">{label}</th>
                   ))}
                 </tr>
@@ -140,22 +151,29 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
               <tbody className="divide-y divide-white/[0.08]">
                 {data.members.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center text-white/50">Aucun membre ajouté</td>
+                    <td colSpan={6} className="px-5 py-8 text-center text-white/50">Aucun membre ajouté</td>
                   </tr>
                 )}
-                {data.members.map(m => (
-                  <tr key={m.id} className="transition-default hover:bg-white/[0.04]">
-                    <td className="px-5 py-3 font-medium">{m.name}</td>
-                    <td className="px-5 py-3">{m.recherches.length}</td>
-                    <td className="px-5 py-3">{m.offres.length}</td>
-                    <td className="px-5 py-3">{m.travaux.length}</td>
-                    <td className="px-5 py-3">
-                      <button onClick={() => onSelectMember(m.id)} className="text-sm font-semibold text-primary hover:underline">
-                        Voir
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {data.members.map(m => {
+                  const lastAction = getLastSuiviAction(m.suiviActions || []);
+
+                  return (
+                    <tr key={m.id} className="transition-default hover:bg-white/[0.04]">
+                      <td className="px-5 py-3 font-medium">{m.name}</td>
+                      <td className="px-5 py-3">{m.recherches.length}</td>
+                      <td className="px-5 py-3">{m.offres.length}</td>
+                      <td className="px-5 py-3">{(m.suiviActions || []).length}</td>
+                      <td className="px-5 py-3 text-muted-foreground">
+                        {lastAction ? `${formatShortDate(lastAction.date || lastAction.prochaineAction)} - ${lastAction.action || lastAction.statut || 'Action'}` : '-'}
+                      </td>
+                      <td className="px-5 py-3">
+                        <button onClick={() => onSelectMember(m.id)} className="text-sm font-semibold text-primary hover:underline">
+                          Voir
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -199,6 +217,19 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
       </div>
     </div>
   );
+}
+
+function getLastSuiviAction(actions: SuiviAction[]) {
+  return [...actions]
+    .filter(action => action.date || action.prochaineAction)
+    .sort((a, b) => (b.date || b.prochaineAction || '').localeCompare(a.date || a.prochaineAction || ''))[0];
+}
+
+function formatShortDate(value: string) {
+  if (!value) return 'Sans date';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
 }
 
 function UpcomingVisits({ data }: { data: AppData }) {

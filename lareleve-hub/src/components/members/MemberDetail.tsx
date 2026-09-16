@@ -1,4 +1,4 @@
-import { Member, Offre, Recherche } from '@/types';
+import { Member, Offre, Recherche, SuiviAction } from '@/types';
 import { ArrowLeft } from 'lucide-react';
 import EditableTable, { ColumnDef } from '../shared/EditableTable';
 
@@ -37,6 +37,15 @@ const offreColumns: ColumnDef<Offre>[] = [
   { key: 'photos', label: 'Photos', type: 'photos', width: '180px' },
 ];
 
+const suiviActionColumns: ColumnDef<SuiviAction>[] = [
+  { key: 'date', label: 'Date', type: 'date', width: '140px' },
+  { key: 'action', label: 'Action', type: 'select', options: ['Appel', 'WhatsApp', 'Mail', 'Demande de nouvelles', 'Visite', 'Autre'], customOptionLabel: 'Autre', customOptionPlaceholder: 'Preciser...', width: '170px' },
+  { key: 'bien', label: 'Bien concerne', width: '180px' },
+  { key: 'statut', label: 'Statut', type: 'select', options: ['A faire', 'Fait', 'En attente', 'A relancer'], width: '140px' },
+  { key: 'commentaire', label: 'Commentaire', type: 'textarea', width: '280px' },
+  { key: 'prochaineAction', label: 'Prochaine relance', type: 'date', width: '160px' },
+];
+
 const offreStatusColors: Record<string, string> = {
   Acceptée: 'bg-success/15 text-success border border-success/20',
   'En attente': 'bg-primary/15 text-primary border border-primary/20',
@@ -50,6 +59,13 @@ const rechercheStatusColors: Record<string, string> = {
   'MSS vocal': 'bg-white/[0.08] text-white border border-white/[0.12]',
   Visité: 'bg-success/15 text-success border border-success/20',
   Autre: 'bg-violet-500/15 text-violet-300 border border-violet-500/20',
+};
+
+const suiviStatusColors: Record<string, string> = {
+  'A faire': 'bg-blue-500/15 text-blue-300 border border-blue-500/20',
+  Fait: 'bg-success/15 text-success border border-success/20',
+  'En attente': 'bg-primary/15 text-primary border border-primary/20',
+  'A relancer': 'bg-red-500/15 text-red-300 border border-red-500/20',
 };
 
 export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailProps) {
@@ -115,7 +131,26 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
       </div>
 
       <section className="space-y-3">
-        <h2 className="section-title">01 — Recherches</h2>
+        <h2 className="section-title">01 - Suivi actions</h2>
+        <EditableTable
+          columns={suiviActionColumns}
+          rows={member.suiviActions || []}
+          onUpdate={suiviActions => update({ suiviActions })}
+          createEmpty={() => ({
+            id: Date.now().toString(),
+            date: new Date().toISOString().slice(0, 10),
+            action: '',
+            bien: '',
+            statut: 'A faire',
+            commentaire: '',
+            prochaineAction: '',
+          })}
+          statusColors={suiviStatusColors}
+        />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="section-title">02 - Recherches</h2>
         <EditableTable
           columns={rechercheColumns}
           rows={member.recherches}
@@ -126,7 +161,7 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
       </section>
 
       <section className="space-y-3">
-        <h2 className="section-title">02 — Offres</h2>
+        <h2 className="section-title">03 - Offres</h2>
         <EditableTable
           columns={offreColumns}
           rows={member.offres}
