@@ -177,9 +177,9 @@ export default function EditableTable<T extends { id: string }>({
                             colorClass || 'border border-white/[0.08] bg-white/[0.05] text-white/70'
                           )}
                         >
-                          <option value="">-</option>
+                          <option value="" className="bg-white text-black">-</option>
                           {col.options.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
+                            <option key={opt} value={opt} className="bg-white text-black">{opt}</option>
                           ))}
                         </select>
                         {col.customOptionLabel && (selectValue === col.customOptionLabel || isCustomSelectValue) && (

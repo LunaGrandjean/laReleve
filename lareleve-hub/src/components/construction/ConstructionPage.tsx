@@ -998,8 +998,8 @@ function Textarea({ value, onChange }: { value: string; onChange: (value: string
 function Select({ value, options, onChange }: { value: string; options: string[]; onChange: (value: string) => void }) {
   return (
     <select value={value} onChange={e => onChange(e.target.value)} className="w-40 bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
-      <option value="">-</option>
-      {options.map(o => <option key={o} value={o}>{o}</option>)}
+      <option value="" className="bg-white text-black">-</option>
+      {options.map(o => <option key={o} value={o} className="bg-white text-black">{o}</option>)}
     </select>
   );
 }
@@ -1030,7 +1030,7 @@ function StatusSelect({ value, onChange }: { value: string; onChange: (value: st
       onChange={e => onChange(e.target.value)}
       className={cn('w-28 rounded-md border border-transparent px-2 py-1 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary', className)}
     >
-      {taskStatuses.map(status => <option key={status} value={status}>{status}</option>)}
+      {taskStatuses.map(status => <option key={status} value={status} className="bg-white text-black">{status}</option>)}
     </select>
   );
 }
