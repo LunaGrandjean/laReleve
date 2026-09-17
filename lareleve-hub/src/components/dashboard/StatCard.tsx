@@ -5,9 +5,10 @@ interface StatCardProps {
   value: number | string;
   icon: ReactNode;
   variant?: 'noir' | 'primary' | 'success' | 'accent';
+  onClick?: () => void;
 }
 
-export default function StatCard({ title, value, icon, variant = 'primary' }: StatCardProps) {
+export default function StatCard({ title, value, icon, variant = 'primary', onClick }: StatCardProps) {
   const accent =
     variant === 'success'
       ? 'text-success'
@@ -18,7 +19,15 @@ export default function StatCard({ title, value, icon, variant = 'primary' }: St
           : 'text-primary';
 
   return (
-    <div className="stat-card group flex items-center justify-between p-5 animate-fade-in">
+    <div
+      className={`stat-card group flex items-center justify-between p-5 animate-fade-in ${onClick ? 'cursor-pointer hover:border-primary/40' : ''}`}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={event => {
+        if (onClick && (event.key === 'Enter' || event.key === ' ')) onClick();
+      }}
+    >
       <div>
         <p className="stat-label">{title}</p>
         <p className="stat-value">{String(value).padStart(2, '0')}</p>

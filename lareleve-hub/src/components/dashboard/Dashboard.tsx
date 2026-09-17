@@ -62,6 +62,7 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
   const [quickNotes, setQuickNotes] = useState(() => {
     try { return localStorage.getItem(QUICK_NOTES_KEY) || ''; } catch { return ''; }
   });
+  const [showActionsRecap, setShowActionsRecap] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(QUICK_NOTES_KEY, quickNotes);
@@ -98,6 +99,10 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
     .slice(0, 8);
 
+  const allSuiviActions = data.members
+    .flatMap(member => (member.suiviActions || []).map(action => ({ ...action, memberId: member.id, memberName: member.name })))
+    .sort((a, b) => (b.date || b.prochaineAction || '').localeCompare(a.date || a.prochaineAction || ''));
+
   return (
     <div className="page-shell">
       <div className="page-header">
@@ -111,7 +116,13 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
           <div className="space-y-3">
             <StatCard title="Membres" value={stats.totalMembers} icon={<Users size={20} />} variant="noir" />
             <StatCard title="Recherches" value={stats.totalRecherches} icon={<Search size={20} />} variant="primary" />
-            <StatCard title="Suivi actions" value={stats.totalSuiviActions} icon={<MessageSquare size={20} />} variant="accent" />
+            <StatCard
+              title="Suivi actions"
+              value={stats.totalSuiviActions}
+              icon={<MessageSquare size={20} />}
+              variant="accent"
+              onClick={() => setShowActionsRecap(prev => !prev)}
+            />
             <StatCard title="A relancer" value={stats.actionsARelancer} icon={<Clock size={20} />} variant="primary" />
           </div>
         </div>
@@ -135,6 +146,10 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
           </div>
         </div>
       </div>
+
+      {showActionsRecap && (
+        <ActionsRecap actions={allSuiviActions} onSelectMember={onSelectMember} onClose={() => setShowActionsRecap(false)} />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">
@@ -223,6 +238,59 @@ function getLastSuiviAction(actions: SuiviAction[]) {
   return [...actions]
     .filter(action => action.date || action.prochaineAction)
     .sort((a, b) => (b.date || b.prochaineAction || '').localeCompare(a.date || a.prochaineAction || ''))[0];
+}
+
+function ActionsRecap({ actions, onSelectMember, onClose }: {
+  actions: Array<SuiviAction & { memberId: string; memberName: string }>;
+  onSelectMember: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <section className="premium-card space-y-4 p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="section-title">Récapitulatif des actions</h2>
+          <p className="text-sm text-muted-foreground">Toutes les actions notées dans les fiches membres, triées par date.</p>
+        </div>
+        <button onClick={onClose} className="action-button">Masquer</button>
+      </div>
+
+      <div className="table-shell">
+        <table className="w-full min-w-[900px] text-left text-sm">
+          <thead className="border-b border-white/[0.08] bg-white/[0.04]">
+            <tr>
+              {['Date', 'Membre', 'Action', 'Bien', 'Statut', 'Commentaire', 'Relance', ''].map(label => (
+                <th key={label} className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white/50">{label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/[0.08]">
+            {actions.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-4 py-8 text-center text-white/50">Aucune action enregistrée</td>
+              </tr>
+            )}
+            {actions.map(action => (
+              <tr key={`${action.memberId}-${action.id}`} className="transition-default hover:bg-white/[0.04]">
+                <td className="px-4 py-3 whitespace-nowrap">{formatShortDate(action.date)}</td>
+                <td className="px-4 py-3 font-medium">{action.memberName}</td>
+                <td className="px-4 py-3">{action.action || '-'}</td>
+                <td className="px-4 py-3">{action.bien || '-'}</td>
+                <td className="px-4 py-3">{action.statut || '-'}</td>
+                <td className="px-4 py-3 max-w-[280px] whitespace-pre-wrap break-words text-muted-foreground">{action.commentaire || '-'}</td>
+                <td className="px-4 py-3 whitespace-nowrap">{action.prochaineAction ? formatShortDate(action.prochaineAction) : '-'}</td>
+                <td className="px-4 py-3">
+                  <button onClick={() => onSelectMember(action.memberId)} className="font-semibold text-primary hover:underline">
+                    Voir
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
 }
 
 function formatShortDate(value: string) {

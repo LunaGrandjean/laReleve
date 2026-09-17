@@ -647,7 +647,7 @@ function PieceTable({ piece, tasks, onBack, onUpdate, onAdd, onDelete }: {
               return (
                 <tr key={t.id} className="hover:bg-secondary/30 transition-default">
                   <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
-                  <td className="px-3 py-2"><Select value={t.lot} options={lots} onChange={v => onUpdate(t.id, 'lot', v)} /></td>
+                  <td className="px-3 py-2"><Select value={t.lot} options={lots} onChange={v => onUpdate(t.id, 'lot', v)} customOptionLabel="Autre" customOptionPlaceholder="Préciser..." /></td>
                   <td className="px-3 py-2"><Input value={t.entreprise} onChange={v => onUpdate(t.id, 'entreprise', v)} /></td>
                   <td className="px-3 py-2"><Textarea value={t.description} onChange={v => onUpdate(t.id, 'description', v)} /></td>
                   <td className="px-3 py-2"><Input type="date" value={t.dateDebutPrevue} onChange={v => onUpdate(t.id, 'dateDebutPrevue', v)} /></td>
@@ -995,12 +995,38 @@ function Textarea({ value, onChange }: { value: string; onChange: (value: string
   return <textarea value={value} onChange={e => onChange(e.target.value)} className="w-52 min-h-16 bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-y" />;
 }
 
-function Select({ value, options, onChange }: { value: string; options: string[]; onChange: (value: string) => void }) {
+function Select({ value, options, onChange, customOptionLabel, customOptionPlaceholder }: {
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  customOptionLabel?: string;
+  customOptionPlaceholder?: string;
+}) {
+  const isCustomValue = customOptionLabel ? Boolean(value) && !options.includes(value) : false;
+  const selectValue = value && options.includes(value)
+    ? value
+    : isCustomValue
+      ? customOptionLabel!
+      : '';
+
   return (
-    <select value={value} onChange={e => onChange(e.target.value)} className="w-40 bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
-      <option value="" className="bg-white text-black">-</option>
-      {options.map(o => <option key={o} value={o} className="bg-white text-black">{o}</option>)}
-    </select>
+    <div className="space-y-1">
+      <select value={selectValue} onChange={e => onChange(e.target.value)} className="w-40 bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+        <option value="" className="bg-white text-black">-</option>
+        {options.map(o => <option key={o} value={o} className="bg-white text-black">{o}</option>)}
+        {customOptionLabel && !options.includes(customOptionLabel) && (
+          <option value={customOptionLabel} className="bg-white text-black">{customOptionLabel}</option>
+        )}
+      </select>
+      {customOptionLabel && (selectValue === customOptionLabel || isCustomValue) && (
+        <input
+          value={value === customOptionLabel ? '' : value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={customOptionPlaceholder || customOptionLabel}
+          className="w-40 bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      )}
+    </div>
   );
 }
 

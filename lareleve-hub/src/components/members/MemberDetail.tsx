@@ -13,7 +13,7 @@ const rechercheColumns: ColumnDef<Recherche>[] = [
   { key: 'visite', label: 'Visite', type: 'date', width: '150px' },
   { key: 'bien', label: 'Biens', width: '120px' },
   { key: 'adresse', label: 'Adresse', width: '180px' },
-  { key: 'statut', label: 'Statut', type: 'select', options: ['À appeler', 'Proposé', 'À étudier', 'MSS vocal', 'Visité', 'Autre'], customOptionLabel: 'Autre', customOptionPlaceholder: 'Préciser...', width: '150px' },
+  { key: 'statut', label: 'Statut', type: 'select', options: ['À appeler', 'À visiter', 'En attente', 'Proposé', 'À étudier', 'MSS vocal', 'Visité', 'Autre'], customOptionLabel: 'Autre', customOptionPlaceholder: 'Préciser...', width: '150px' },
   { key: 'offre', label: 'Offre', type: 'select', options: ['Non', 'Oui'], width: '90px' },
   { key: 'prix', label: 'Prix', width: '100px' },
   { key: 'prixM2', label: 'Prix m²', width: '90px' },
@@ -54,6 +54,8 @@ const offreStatusColors: Record<string, string> = {
 
 const rechercheStatusColors: Record<string, string> = {
   'À appeler': 'bg-red-500/15 text-red-300 border border-red-500/20',
+  'À visiter': 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20',
+  'En attente': 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/20',
   Proposé: 'bg-primary/15 text-primary border border-primary/20',
   'À étudier': 'bg-blue-500/15 text-blue-300 border border-blue-500/20',
   'MSS vocal': 'bg-white/[0.08] text-white border border-white/[0.12]',
