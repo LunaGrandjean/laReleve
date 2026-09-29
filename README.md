@@ -4,7 +4,7 @@ Application interne de gestion opérationnelle pour centraliser le suivi des con
 
 ## Auteur
 
-Luna Grandjean
+Luna Grandjean Stefano
 
 ## Présentation
 

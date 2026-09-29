@@ -99,8 +99,9 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
     .slice(0, 8);
 
-  const allSuiviActions = data.members
+  const actionsAFaire = data.members
     .flatMap(member => (member.suiviActions || []).map(action => ({ ...action, memberId: member.id, memberName: member.name })))
+    .filter(action => action.statut === 'A faire')
     .sort((a, b) => (b.date || b.prochaineAction || '').localeCompare(a.date || a.prochaineAction || ''));
 
   return (
@@ -148,7 +149,7 @@ export default function Dashboard({ data, onSelectMember }: DashboardProps) {
       </div>
 
       {showActionsRecap && (
-        <ActionsRecap actions={allSuiviActions} onSelectMember={onSelectMember} onClose={() => setShowActionsRecap(false)} />
+        <ActionsRecap actions={actionsAFaire} onSelectMember={onSelectMember} onClose={() => setShowActionsRecap(false)} />
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -249,8 +250,8 @@ function ActionsRecap({ actions, onSelectMember, onClose }: {
     <section className="premium-card space-y-4 p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="section-title">Récapitulatif des actions</h2>
-          <p className="text-sm text-muted-foreground">Toutes les actions notées dans les fiches membres, triées par date.</p>
+          <h2 className="section-title">Actions à faire</h2>
+          <p className="text-sm text-muted-foreground">Toutes les actions encore à faire dans les fiches membres, triées par date.</p>
         </div>
         <button onClick={onClose} className="action-button">Masquer</button>
       </div>
@@ -267,7 +268,7 @@ function ActionsRecap({ actions, onSelectMember, onClose }: {
           <tbody className="divide-y divide-white/[0.08]">
             {actions.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-white/50">Aucune action enregistrée</td>
+                <td colSpan={8} className="px-4 py-8 text-center text-white/50">Aucune action à faire</td>
               </tr>
             )}
             {actions.map(action => (

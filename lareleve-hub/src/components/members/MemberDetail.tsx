@@ -72,6 +72,7 @@ const suiviStatusColors: Record<string, string> = {
 
 export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailProps) {
   const update = (partial: Partial<Member>) => onUpdate({ ...member, ...partial });
+  const searchSummary = buildSearchSummary(member.recherches);
 
   const updateRecherches = (recherches: Recherche[]) => {
     const offres = recherches.reduce((nextOffres, recherche) => {
@@ -152,7 +153,14 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
       </section>
 
       <section className="space-y-3">
-        <h2 className="section-title">02 - Recherches</h2>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <h2 className="section-title">02 - Recherches</h2>
+          <div className="grid grid-cols-3 gap-2">
+            <SearchCounter label="Propositions" value={searchSummary.propositions} />
+            <SearchCounter label="Visites" value={searchSummary.visites} />
+            <SearchCounter label="Offres" value={searchSummary.offres} />
+          </div>
+        </div>
         <EditableTable
           columns={rechercheColumns}
           rows={member.recherches}
@@ -172,6 +180,23 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
           statusColors={offreStatusColors}
         />
       </section>
+    </div>
+  );
+}
+
+function buildSearchSummary(recherches: Recherche[]) {
+  return {
+    propositions: recherches.filter(recherche => recherche.statut === 'Proposé' || recherche.statut === 'ProposÃ©').length,
+    visites: recherches.filter(recherche => Boolean(recherche.visite) || recherche.statut === 'Visité' || recherche.statut === 'VisitÃ©').length,
+    offres: recherches.filter(recherche => recherche.offre === 'Oui').length,
+  };
+}
+
+function SearchCounter({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-center">
+      <div className="text-base font-semibold text-white tabular-nums">{value}</div>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
     </div>
   );
 }
