@@ -13,7 +13,7 @@ const rechercheColumns: ColumnDef<Recherche>[] = [
   { key: 'visite', label: 'Visite', type: 'date', width: '150px' },
   { key: 'bien', label: 'Biens', width: '120px' },
   { key: 'adresse', label: 'Adresse', width: '180px' },
-  { key: 'statut', label: 'Statut', type: 'select', options: ['À appeler', 'À visiter', 'En attente', 'Proposé', 'À étudier', 'MSS vocal', 'Visité', 'Autre'], customOptionLabel: 'Autre', customOptionPlaceholder: 'Préciser...', width: '150px' },
+  { key: 'statut', label: 'Statut', type: 'select', options: ['À appeler', 'À visiter', 'En attente', 'Proposé', 'Visité', 'Offre', 'Refus', 'À étudier', 'MSS vocal', 'Autre'], customOptionLabel: 'Autre', customOptionPlaceholder: 'Préciser...', width: '150px' },
   { key: 'offre', label: 'Offre', type: 'select', options: ['Non', 'Oui'], width: '90px' },
   { key: 'prix', label: 'Prix', width: '100px' },
   { key: 'prixM2', label: 'Prix m²', width: '90px' },
@@ -57,6 +57,8 @@ const rechercheStatusColors: Record<string, string> = {
   'À visiter': 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20',
   'En attente': 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/20',
   Proposé: 'bg-primary/15 text-primary border border-primary/20',
+  Offre: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20',
+  Refus: 'bg-destructive/15 text-destructive border border-destructive/20',
   'À étudier': 'bg-blue-500/15 text-blue-300 border border-blue-500/20',
   'MSS vocal': 'bg-white/[0.08] text-white border border-white/[0.12]',
   Visité: 'bg-success/15 text-success border border-success/20',
@@ -155,10 +157,11 @@ export default function MemberDetail({ member, onBack, onUpdate }: MemberDetailP
       <section className="space-y-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <h2 className="section-title">02 - Recherches</h2>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <SearchCounter label="Propositions" value={searchSummary.propositions} />
             <SearchCounter label="Visites" value={searchSummary.visites} />
             <SearchCounter label="Offres" value={searchSummary.offres} />
+            <SearchCounter label="Refus" value={searchSummary.refus} />
           </div>
         </div>
         <EditableTable
@@ -188,7 +191,8 @@ function buildSearchSummary(recherches: Recherche[]) {
   return {
     propositions: recherches.filter(recherche => recherche.statut === 'Proposé' || recherche.statut === 'ProposÃ©').length,
     visites: recherches.filter(recherche => Boolean(recherche.visite) || recherche.statut === 'Visité' || recherche.statut === 'VisitÃ©').length,
-    offres: recherches.filter(recherche => recherche.offre === 'Oui').length,
+    offres: recherches.filter(recherche => recherche.offre === 'Oui' || recherche.statut === 'Offre').length,
+    refus: recherches.filter(recherche => recherche.statut === 'Refus').length,
   };
 }
 
