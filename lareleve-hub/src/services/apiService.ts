@@ -47,6 +47,11 @@ export const apiService = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  updateUser: (userId: string, payload: { email: string; name: string; password?: string }) =>
+    request<{ user: AuthUser }>(`/api/admin/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
   importUserBackup: (userId: string, backup: unknown) =>
     request<{ ok: true }>(`/api/admin/users/${userId}/data`, {
       method: 'POST',

@@ -175,6 +175,41 @@ app.post(['/api/admin/users', '/admin/users'], requireAuth, requireAdmin, async 
   res.status(201).json({ user: { id: String(result.insertedId), email, name, role } });
 });
 
+app.put(['/api/admin/users/:id', '/admin/users/:id'], requireAuth, requireAdmin, async (req, res) => {
+  const userId = String(req.params.id);
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const name = String(req.body.name || '').trim();
+  const password = String(req.body.password || '');
+
+  if (!email || !name) {
+    return res.status(400).json({ error: 'Nom et email requis' });
+  }
+
+  if (password && password.length < 8) {
+    return res.status(400).json({ error: 'Le nouveau mot de passe doit faire au moins 8 caracteres' });
+  }
+
+  const existing = await users().findOne({ email, _id: { $ne: new ObjectId(userId) } });
+  if (existing) return res.status(409).json({ error: 'Cet email existe deja' });
+
+  const update = {
+    email,
+    name,
+    updatedAt: new Date(),
+  };
+
+  if (password) update.passwordHash = await bcrypt.hash(password, 12);
+
+  const result = await users().findOneAndUpdate(
+    { _id: new ObjectId(userId) },
+    { $set: update },
+    { returnDocument: 'after', projection: { passwordHash: 0 } }
+  );
+
+  if (!result) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  res.json({ user: publicUser(result) });
+});
+
 app.post(['/api/admin/users/:id/data', '/admin/users/:id/data'], requireAuth, requireAdmin, async (req, res) => {
   const userId = String(req.params.id);
   const exists = await users().findOne({ _id: new ObjectId(userId) });

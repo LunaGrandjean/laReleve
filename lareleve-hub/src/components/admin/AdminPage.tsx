@@ -1,10 +1,11 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
-import { Database, Plus, Trash2, Upload } from 'lucide-react';
+import { Database, Plus, Save, Trash2, Upload } from 'lucide-react';
 import { apiService, AuthUser } from '@/services/apiService';
 import { storageService } from '@/services/storageService';
 
 export default function AdminPage() {
   const [users, setUsers] = useState<AuthUser[]>([]);
+  const [passwordEdits, setPasswordEdits] = useState<Record<string, string>>({});
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,6 +34,27 @@ export default function AdminPage() {
       await loadUsers();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Création impossible');
+    }
+  };
+
+  const updateLocalUser = (userId: string, key: 'name' | 'email', value: string) => {
+    setUsers(prev => prev.map(user => (user.id === userId ? { ...user, [key]: value } : user)));
+  };
+
+  const saveUser = async (user: AuthUser) => {
+    setMessage('');
+    setError('');
+    try {
+      await apiService.updateUser(user.id, {
+        name: user.name,
+        email: user.email,
+        password: passwordEdits[user.id] || undefined,
+      });
+      setPasswordEdits(prev => ({ ...prev, [user.id]: '' }));
+      setMessage('Compte mis à jour.');
+      await loadUsers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Modification impossible');
     }
   };
 
@@ -67,7 +89,7 @@ export default function AdminPage() {
     <div className="page-shell">
       <div className="page-header">
         <h1 className="page-title">Admin</h1>
-        <p className="page-subtitle">Création des comptes et import des données existantes.</p>
+        <p className="page-subtitle">Création des comptes, modification des identifiants et import des données existantes.</p>
       </div>
 
       <form onSubmit={createUser} className="premium-card grid gap-3 p-5 lg:grid-cols-[1fr_1fr_180px_auto] lg:items-end">
@@ -86,10 +108,10 @@ export default function AdminPage() {
       )}
 
       <div className="table-shell">
-        <table className="w-full min-w-[760px] text-left text-sm">
+        <table className="w-full min-w-[1080px] text-left text-sm">
           <thead className="border-b border-white/[0.08] bg-white/[0.04]">
             <tr>
-              {['Nom', 'Email', 'Rôle', 'Données', ''].map(label => (
+              {['Nom', 'Email', 'Rôle', 'Nouveau mot de passe', 'Données', ''].map(label => (
                 <th key={label} className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white/50">{label}</th>
               ))}
             </tr>
@@ -97,9 +119,31 @@ export default function AdminPage() {
           <tbody className="divide-y divide-white/[0.08]">
             {users.map(user => (
               <tr key={user.id} className="transition-default hover:bg-white/[0.04]">
-                <td className="px-4 py-3 font-medium">{user.name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
+                <td className="px-4 py-3">
+                  <input
+                    value={user.name}
+                    onChange={event => updateLocalUser(user.id, 'name', event.target.value)}
+                    className="w-44 rounded border border-white/[0.08] bg-white/[0.05] px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    value={user.email}
+                    onChange={event => updateLocalUser(user.id, 'email', event.target.value)}
+                    type="email"
+                    className="w-64 rounded border border-white/[0.08] bg-white/[0.05] px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </td>
                 <td className="px-4 py-3">{user.role}</td>
+                <td className="px-4 py-3">
+                  <input
+                    value={passwordEdits[user.id] || ''}
+                    onChange={event => setPasswordEdits(prev => ({ ...prev, [user.id]: event.target.value }))}
+                    type="password"
+                    placeholder="Laisser vide"
+                    className="w-44 rounded border border-white/[0.08] bg-white/[0.05] px-2 py-1 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </td>
                 <td className="px-4 py-3">
                   <label className="action-button inline-flex cursor-pointer">
                     <Upload size={15} /> Importer JSON
@@ -116,6 +160,9 @@ export default function AdminPage() {
                   </label>
                 </td>
                 <td className="px-4 py-3">
+                  <button onClick={() => saveUser(user)} className="mr-3 text-primary transition-default hover:text-primary/80" title="Enregistrer">
+                    <Save size={15} />
+                  </button>
                   <button onClick={() => deleteUser(user.id)} className="text-destructive transition-default hover:text-destructive/80" title="Supprimer">
                     <Trash2 size={15} />
                   </button>
@@ -124,7 +171,7 @@ export default function AdminPage() {
             ))}
             {users.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-white/50">
+                <td colSpan={6} className="px-4 py-8 text-center text-white/50">
                   <Database className="mx-auto mb-2" size={20} />
                   Aucun compte
                 </td>
