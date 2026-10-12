@@ -16,7 +16,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Erreur serveur');
+  if (!response.ok) {
+    if (response.status === 413) throw new Error('Fichier trop volumineux pour la synchronisation cloud.');
+    if (response.status === 404) throw new Error('API introuvable. Vérifie le déploiement Vercel.');
+    throw new Error(data.error || `Erreur serveur (${response.status})`);
+  }
   return data as T;
 }
 

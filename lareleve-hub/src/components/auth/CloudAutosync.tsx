@@ -14,7 +14,7 @@ export default function CloudAutosync() {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
       timeoutRef.current = window.setTimeout(async () => {
         try {
-          await apiService.saveBackup(await storageService.exportAll());
+          await apiService.saveBackup(await storageService.exportForCloud());
         } catch (error) {
           console.error('Cloud sync failed:', error);
         }

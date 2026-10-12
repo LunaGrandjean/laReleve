@@ -60,6 +60,36 @@ const readJson = (key: string) => {
   return raw ? JSON.parse(raw) : null;
 };
 
+const stripFileData = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(stripFileData);
+  if (!value || typeof value !== 'object') return value;
+
+  const next = { ...(value as Record<string, unknown>) };
+  if (typeof next.data === 'string' && typeof next.name === 'string') {
+    next.data = '';
+    next.cloudNote = 'Fichier non synchronisé avec MongoDB car trop volumineux.';
+  }
+
+  Object.keys(next).forEach(key => {
+    next[key] = stripFileData(next[key]);
+  });
+
+  return next;
+};
+
+const prepareCloudBackup = (backup: unknown) => {
+  const rawSize = JSON.stringify(backup).length;
+  if (rawSize < 3_500_000) return backup;
+
+  return {
+    ...(backup as Record<string, unknown>),
+    cloudMode: 'light',
+    documents: stripFileData((backup as { documents?: unknown }).documents),
+  };
+};
+
+const toCloudBackup = async () => prepareCloudBackup(await storageService.exportAll());
+
 const openDb = () => new Promise<IDBDatabase>((resolve, reject) => {
   if (!('indexedDB' in window)) {
     reject(new Error('IndexedDB indisponible'));
@@ -178,6 +208,8 @@ export const storageService = {
     rootFiles: readJson(ROOT_FILES_STORAGE_KEY),
     construction: readJson(CONSTRUCTION_STORAGE_KEY),
   }),
+  exportForCloud: toCloudBackup,
+  prepareBackupForCloud: prepareCloudBackup,
   importAll: async (backup: unknown): Promise<void> => {
     const data = backup as {
       appData?: Partial<AppData>;

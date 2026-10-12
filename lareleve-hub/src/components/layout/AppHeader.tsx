@@ -28,13 +28,23 @@ export default function AppHeader({ title = 'LaRelève' }: HeaderProps) {
     const reader = new FileReader();
 
     reader.onload = async () => {
+      let imported = false;
       try {
         await storageService.importAll(JSON.parse(String(reader.result)));
-        if (user) await apiService.saveBackup(await storageService.exportAll());
-        window.location.reload();
-      } catch {
-        alert("Impossible d'importer ce fichier. Vérifie que c'est bien une sauvegarde LaRelève.");
+        imported = true;
+        if (user) await apiService.saveBackup(await storageService.exportForCloud());
+      } catch (error) {
+        if (imported) {
+          alert("Les données ont été importées dans ce navigateur, mais la synchronisation cloud a échoué. Les fichiers volumineux peuvent dépasser la limite Vercel.");
+          window.location.reload();
+          return;
+        }
+
+        alert(error instanceof Error ? error.message : "Impossible d'importer ce fichier. Vérifie que c'est bien une sauvegarde LaRelève.");
+        return;
       }
+
+      window.location.reload();
     };
 
     reader.readAsText(file);

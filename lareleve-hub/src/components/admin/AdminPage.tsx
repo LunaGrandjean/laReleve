@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { Database, Plus, Trash2, Upload } from 'lucide-react';
 import { apiService, AuthUser } from '@/services/apiService';
+import { storageService } from '@/services/storageService';
 
 export default function AdminPage() {
   const [users, setUsers] = useState<AuthUser[]>([]);
@@ -41,8 +42,8 @@ export default function AdminPage() {
       setMessage('');
       setError('');
       try {
-        await apiService.importUserBackup(userId, JSON.parse(String(reader.result)));
-        setMessage('Données importées dans le compte.');
+        await apiService.importUserBackup(userId, storageService.prepareBackupForCloud(JSON.parse(String(reader.result))));
+        setMessage('Données importées dans le compte. Les fichiers trop volumineux sont gardés hors synchronisation cloud.');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Import impossible');
       }
