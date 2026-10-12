@@ -8,6 +8,10 @@ const DB_NAME = 'lareleve_hub_db';
 const DB_STORE = 'keyval';
 const DB_VERSION = 1;
 
+const notifyDataChange = () => {
+  window.dispatchEvent(new Event('lareleve:data-change'));
+};
+
 const normalizeData = (data: Partial<AppData> | null | undefined): AppData => ({
   members: (data?.members || []).map(member => ({
     ...member,
@@ -125,6 +129,7 @@ export const storageService = {
   save: (data: AppData): void => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      notifyDataChange();
     } catch (e) {
       console.error('Failed to save data:', e);
     }
@@ -159,6 +164,7 @@ export const storageService = {
     try {
       await idbSet(DOCUMENTS_STORAGE_KEY, documents);
       try { localStorage.removeItem(DOCUMENTS_STORAGE_KEY); } catch {}
+      notifyDataChange();
     } catch (e) {
       console.error('Failed to save documents:', e);
       throw e;
@@ -193,11 +199,13 @@ export const storageService = {
     if ('rootFiles' in data) {
       if (data.rootFiles) localStorage.setItem(ROOT_FILES_STORAGE_KEY, JSON.stringify(data.rootFiles));
       else localStorage.removeItem(ROOT_FILES_STORAGE_KEY);
+      notifyDataChange();
     }
 
     if ('construction' in data) {
       if (data.construction) localStorage.setItem(CONSTRUCTION_STORAGE_KEY, JSON.stringify(data.construction));
       else localStorage.removeItem(CONSTRUCTION_STORAGE_KEY);
+      notifyDataChange();
     }
   },
 };

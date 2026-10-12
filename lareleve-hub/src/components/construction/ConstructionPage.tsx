@@ -205,6 +205,7 @@ export default function ConstructionPage() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    window.dispatchEvent(new Event('lareleve:data-change'));
   }, [projects]);
 
   const updateProject = (updater: (project: ConstructionProject) => ConstructionProject) => {

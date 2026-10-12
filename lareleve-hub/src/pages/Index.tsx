@@ -8,11 +8,14 @@ import MembersPage from '@/components/members/MembersPage';
 import MemberDetail from '@/components/members/MemberDetail';
 import DocumentsPage from '@/components/documents/DocumentsPage';
 import ConstructionPage from '@/components/construction/ConstructionPage';
+import AdminPage from '@/components/admin/AdminPage';
+import { useAuth } from '@/context/AuthContext';
 
-type Tab = 'home' | 'contacts' | 'members' | 'documents' | 'construction';
+type Tab = 'home' | 'contacts' | 'members' | 'documents' | 'construction' | 'admin';
 
 export default function Index() {
   const { data, setContacts, setEntrepreneurContacts, addMember, deleteMember, updateMember } = useAppData();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
@@ -59,6 +62,8 @@ export default function Index() {
         return <DocumentsPage />;
       case 'construction':
         return <ConstructionPage />;
+      case 'admin':
+        return user?.role === 'admin' ? <AdminPage /> : null;
       default:
         return null;
     }
@@ -68,7 +73,7 @@ export default function Index() {
     <div className="app-shell">
       <div className="app-bg" />
       <div className="app-layer">
-        <AppSidebar activeTab={activeTab} setActiveTab={(t) => { setActiveTab(t as Tab); setSelectedMemberId(null); }} onLogoClick={handleLogoClick} />
+        <AppSidebar activeTab={activeTab} setActiveTab={(t) => { setActiveTab(t as Tab); setSelectedMemberId(null); }} onLogoClick={handleLogoClick} isAdmin={user?.role === 'admin'} />
       </div>
       <div className="app-layer flex min-h-screen flex-col">
         <AppHeader />

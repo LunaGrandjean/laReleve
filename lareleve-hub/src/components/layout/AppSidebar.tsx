@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import type { ElementType } from 'react';
-import { BookUser, ClipboardList, FolderOpen, Home, Menu, Users, X } from 'lucide-react';
+import { BookUser, ClipboardList, FolderOpen, Home, Menu, Shield, Users, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Tab = 'home' | 'contacts' | 'members' | 'documents' | 'construction';
+type Tab = 'home' | 'contacts' | 'members' | 'documents' | 'construction' | 'admin';
 
 interface SidebarProps {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   onLogoClick: () => void;
+  isAdmin?: boolean;
 }
 
 const navItems: { id: Tab; label: string; icon: ElementType }[] = [
@@ -19,8 +20,9 @@ const navItems: { id: Tab; label: string; icon: ElementType }[] = [
   { id: 'construction', label: 'Suivi chantier', icon: ClipboardList },
 ];
 
-export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: SidebarProps) {
+export default function AppSidebar({ activeTab, setActiveTab, onLogoClick, isAdmin = false }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const visibleNavItems = isAdmin ? [...navItems, { id: 'admin' as const, label: 'Admin', icon: Shield }] : navItems;
 
   const handleNav = (tab: Tab) => {
     setActiveTab(tab);
@@ -55,7 +57,7 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
           </button>
 
           <nav className="flex items-center gap-2">
-            {navItems.map(({ id, label, icon: Icon }) => (
+            {visibleNavItems.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => handleNav(id)}
@@ -89,7 +91,7 @@ export default function AppSidebar({ activeTab, setActiveTab, onLogoClick }: Sid
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map(({ id, label, icon: Icon }) => (
+          {visibleNavItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => handleNav(id)}

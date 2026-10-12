@@ -1,5 +1,7 @@
 import { useRef } from 'react';
-import { Download, Upload } from 'lucide-react';
+import { Download, LogOut, Upload } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { apiService } from '@/services/apiService';
 import { storageService } from '@/services/storageService';
 
 interface HeaderProps {
@@ -7,6 +9,7 @@ interface HeaderProps {
 }
 
 export default function AppHeader({ title = 'LaRelève' }: HeaderProps) {
+  const { user, logout } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
@@ -27,6 +30,7 @@ export default function AppHeader({ title = 'LaRelève' }: HeaderProps) {
     reader.onload = async () => {
       try {
         await storageService.importAll(JSON.parse(String(reader.result)));
+        if (user) await apiService.saveBackup(await storageService.exportAll());
         window.location.reload();
       } catch {
         alert("Impossible d'importer ce fichier. Vérifie que c'est bien une sauvegarde LaRelève.");
@@ -43,17 +47,17 @@ export default function AppHeader({ title = 'LaRelève' }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          onClick={handleExport}
-          className="action-button py-1.5"
-        >
+        <span className="hidden text-sm text-muted-foreground md:inline">
+          {user?.name}
+        </span>
+        <button onClick={handleExport} className="action-button py-1.5">
           <Download size={16} /> Exporter
         </button>
-        <button
-          onClick={() => inputRef.current?.click()}
-          className="action-button-primary py-1.5"
-        >
+        <button onClick={() => inputRef.current?.click()} className="action-button-primary py-1.5">
           <Upload size={16} /> Importer
+        </button>
+        <button onClick={logout} className="action-button py-1.5">
+          <LogOut size={16} /> Déconnexion
         </button>
         <input
           ref={inputRef}
