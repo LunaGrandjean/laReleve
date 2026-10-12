@@ -38,6 +38,10 @@ const db = () => client.db(MONGODB_DB);
 const users = () => db().collection('users');
 const backups = () => db().collection('backups');
 
+app.get(['/api/health', '/health'], (_req, res) => {
+  res.json({ ok: true, service: 'lareleve-api' });
+});
+
 function signUser(user) {
   return jwt.sign(
     { id: String(user._id), email: user.email, role: user.role, name: user.name },
